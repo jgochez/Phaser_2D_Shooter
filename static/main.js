@@ -17,7 +17,6 @@ var config = {
 };
 
 
-
 var game = new Phaser.Game(config);
 
 
@@ -30,16 +29,15 @@ function preload ()
 
 }
 
+
 function create ()
 {
-
     // moving space background
     this.tileSprite = this.add.tileSprite(0, 0, innerWidth, innerHeight, 'space');
     this.tileSprite.setOrigin(0);
     this.tileSprite.setScrollFactor(0, 1);
 
     // asteroid handling which depends on level
-
     var i = 0;
     while (i < 10) {
         i++;
@@ -49,17 +47,17 @@ function create ()
     this.add.image(400, 100, 'big-asteroid');
     this.physics.add.sprite(400, 100, 'big-asteroid');
 
-
     // main-ship logic
-    main_ship = this.physics.add.sprite(400, 630, 'ship');
+    main_ship = this.physics.add.sprite(100, 630, 'ship');
     main_ship.setScale(.2);
     main_ship.setCollideWorldBounds(true);
-   
 
-
-    
-
+    // second ship logic
+    second_ship = this.physics.add.sprite(700, 630, 'ship');
+    second_ship.setScale(.3);
+    second_ship.setCollideWorldBounds(true);   
 }
+
 
 function update ()
 {
@@ -73,12 +71,10 @@ function update ()
         main_ship.setVelocityX(-200);
         main_ship.anims.play('left', true);
     }
-
     else if (cursors.right.isDown) {
         main_ship.setVelocityX(200);
         main_ship.anims.play('right', true);
     }
-
     if (cursors.up.isDown) {
         main_ship.setVelocityY(-200);
         main_ship.anims.play( 'up', true);
@@ -88,5 +84,31 @@ function update ()
         main_ship.anims.play('down', true);
     }
     
+    // moving second ship with keys
+    let keyA;
+    let keyD;
+    let keyW;
+    let keyS;
 
+    keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+    keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+    if (keyA.isDown) {
+        second_ship.setVelocityX(-150);
+        second_ship.anims.play('left', true);
+    }
+    else if (keyD.isDown) {
+        second_ship.setVelocityX(150);
+        second_ship.anims.play('right', true);
+    }
+    if (keyW.isDown) {
+        second_ship.setVelocityY(-150);
+        second_ship.anims.play( 'up', true);
+    }
+    else if (keyS.isDown) {
+        second_ship.setVelocityY(150);
+        second_ship.anims.play('down', true);
+    }
 }
