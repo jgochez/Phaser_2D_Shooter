@@ -1,4 +1,3 @@
-
 var config = {
     type: Phaser.AUTO,
     width: 800,
@@ -25,9 +24,9 @@ var game = new Phaser.Game(config);
 function preload ()
 {
     // loading images
-    this.load.image('space', 'images/background1.jpeg');
-    this.load.image('ship', 'images/ship1.png');
-    this.load.image('big-asteroid', 'images/asteroids-sprite.png');
+    this.load.image('space', 'static/images/background1.jpeg');
+    this.load.image('ship', 'static/images/ship1.png');
+    this.load.image('big-asteroid', 'static/images/asteroids-sprite.png');
 
 }
 
@@ -40,6 +39,12 @@ function create ()
     this.tileSprite.setScrollFactor(0, 1);
 
     // asteroid handling which depends on level
+
+    var i = 0;
+    while (i < 10) {
+        i++;
+        this.physics.add.sprite(Math.floor(Math.random() * 400), Math.floor(Math.random() * 400), 'big-asteroid' );
+    }
 
     this.add.image(400, 100, 'big-asteroid');
     this.physics.add.sprite(400, 100, 'big-asteroid');
