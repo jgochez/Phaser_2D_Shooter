@@ -1,3 +1,48 @@
+
+class Laser extends Phaser.Physics.Arcade.Sprite{
+    constructor(scene, x, y) {
+        super(scene, x, y, 'laser-beam');
+    }
+
+    fire(x, y) {
+        this.body.reset(x, y);
+        this.setActive(true);
+        this.setVisible(true);
+        this.setVelocityY(-900);
+    }
+    preUpdate(time, delta) {
+        super.preUpdate(time, delta);
+        if (this.y <= 0) {
+            this.setActive(false);
+            this.setVisible(false);
+        }
+    }
+
+}
+
+class LaserGroup extends Phaser.Physics.Arcade.Group {
+    constructor(scene) {
+        super(scene.physics.world, scene);
+        this.createMultiple({
+            classType: Laser,
+            frameQuantity: 100,
+            active: false,
+            visible: false,
+            key: 'laser-beam'
+        })
+    }
+    fireLaser(x, y) {
+        const laser = this.getFirstDead(false);
+        if (laser) {
+            laser.fire(x, y);
+        }
+    }
+}
+
+function addEvents() {
+    
+}
+
 var config = {
     type: Phaser.AUTO,
     width: 800,
@@ -26,6 +71,8 @@ function preload ()
     this.load.image('space', 'static/images/background1.jpeg');
     this.load.image('ship', 'static/images/ship1.png');
     this.load.image('big-asteroid', 'static/images/asteroids-sprite.png');
+    this.load.image('exhaust', 'static/images/ship-exhaust1.png');
+    this.load.image('laser-beam', 'static/images/beams.png');
 
 }
 
@@ -48,9 +95,35 @@ function create ()
     this.physics.add.sprite(400, 100, 'big-asteroid');
 
     // main-ship logic
-    main_ship = this.physics.add.sprite(100, 630, 'ship');
-    main_ship.setScale(.2);
-    main_ship.setCollideWorldBounds(true);
+    this.main_ship = this.add.image(400, 630, 'ship');
+    this.main_ship.setScale(.2);
+    this.main_ship.setDepth(1);
+    
+    // ship laser-logic
+    this.laserGroup = new LaserGroup(this);
+    
+    // event-listening for laser
+    this.input.on( 'pointerdown', pointer => {
+        // begin shooting
+        this.laserGroup.fireLaser(this.main_ship.x, this.main_ship.y - 20);
+
+    });
+
+    // main-ship boosters logic
+    this.emitter
+    this.emitter = this.add.particles(0, 0, 'exhaust',{
+
+        quantity: 5,
+        speedY: { min: 20, max: 50 },
+        speedX: { min: -10, max: 10 },
+        scale: { start: 0.065, end: .0065 },
+        follow: this.main_ship,
+        scale: 0.01,
+        accelerationY: 1000,
+        lifespan: { min: 100, max: 300 },
+        followOffset: { y: this.main_ship.height * 0.081}
+
+    })
 
     // second ship logic
     second_ship = this.physics.add.sprite(700, 630, 'ship');
@@ -65,23 +138,25 @@ function update ()
     this.tileSprite.tilePositionY -= 5;
 
     // moving ship with keys
-    cursors = this.input.keyboard.createCursorKeys();
+    this.cursors = this.input.keyboard.createCursorKeys();
 
-    if (cursors.left.isDown) {
-        main_ship.setVelocityX(-200);
-        main_ship.anims.play('left', true);
+    // using keys to direct
+    
+    const speed = 8;
+
+    if (this.cursors.left.isDown) {
+        this.main_ship.x -= speed;
     }
-    else if (cursors.right.isDown) {
-        main_ship.setVelocityX(200);
-        main_ship.anims.play('right', true);
+
+    else if (this.cursors.right.isDown) {
+        this.main_ship.x += speed;
     }
-    if (cursors.up.isDown) {
-        main_ship.setVelocityY(-200);
-        main_ship.anims.play( 'up', true);
+    
+    else if (this.cursors.up.isDown) {
+        this.main_ship.y -= speed;
     }
-    else if (cursors.down.isDown) {
-        main_ship.setVelocityY(200);
-        main_ship.anims.play('down', true);
+    else if (this.cursors.down.isDown) {
+        this.main_ship.y += speed;
     }
     
     // moving second ship with keys
@@ -103,7 +178,7 @@ function update ()
         second_ship.setVelocityX(150);
         second_ship.anims.play('right', true);
     }
-    if (keyW.isDown) {
+    else if (keyW.isDown) {
         second_ship.setVelocityY(-150);
         second_ship.anims.play( 'up', true);
     }
