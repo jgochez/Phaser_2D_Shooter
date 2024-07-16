@@ -75,6 +75,7 @@ function preload() {
     this.load.image('big-asteroid', 'static/images/asteroids-sprite.png');
     this.load.image('exhaust', 'static/images/ship-exhaust1.png');
     this.load.image('laser-beam', 'static/images/beams.png');
+    this.load.audio('mediumLaser', 'static/audio/mediumFireRateLaser.mp3');
 }
 
 function create() {
@@ -99,13 +100,18 @@ function create() {
     this.main_ship.setScale(0.2);
     this.main_ship.setDepth(1);
 
+
     // ship laser-logic
     this.laserGroup = new LaserGroup(this);
+    
+    // laser audio
+    let mediumFireRateLaser = this.sound.add('mediumLaser');
 
     // event-listening for laser
     this.input.on('pointerdown', pointer => {
         // begin shooting
         this.laserGroup.fireLaser(this.main_ship.x, this.main_ship.y - 20);
+        mediumFireRateLaser.play();
     });
 
     // main-ship boosters logic
