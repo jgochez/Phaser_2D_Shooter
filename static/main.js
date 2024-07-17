@@ -115,6 +115,8 @@ function create() {
     this.main_ship.setDepth(1);
     this.main_ship.setCollideWorldBounds();
 
+    // laser audio
+    let mediumFireRateLaser = this.sound.add('mediumLaser');
 
     // ship laser-logic
     this.laserGroup = new LaserGroup(this);
@@ -123,11 +125,10 @@ function create() {
     this.input.on( 'pointerdown', pointer => {
         // begin shooting
         this.laserGroup.fireLaser(this.main_ship.x, this.main_ship.y - 50);
-
+        mediumFireRateLaser.play();
     });
     
-    // laser audio
-    let mediumFireRateLaser = this.sound.add('mediumLaser');
+    
 
     // event-listening for laser for second ship
     var spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
