@@ -1,7 +1,4 @@
-import Asteroid from "./asteroids.js"
-
-
-export default class PlayScene extends Phaser.Scene{
+class PlayScene extends Phaser.Scene{
     constructor() {
         super('PlayScene')
     }
@@ -26,6 +23,5 @@ export default class PlayScene extends Phaser.Scene{
         let asteroid = new Asteroid (this, 0, 0, 'asteroid', 0).setScale(0.2);
         this.asteroidsGroup.add(asteroid, true);
         this.asteroidArray.push(asteroid);
-    }
-    
+    }    
 }
