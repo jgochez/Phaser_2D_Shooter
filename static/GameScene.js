@@ -65,6 +65,7 @@ class GameScene extends Phaser.Scene {
     
         spacebar.on( 'down', pointer => {
             this.laserGroup.fireLaser(this.second_ship.x, this.second_ship.y - 50)
+            mediumFireRateLaser.play();
         })
     
         // main-ship boosters logic

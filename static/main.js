@@ -1,5 +1,3 @@
-
-
 var config = {
     type: Phaser.AUTO,
     width: 800,
@@ -15,4 +13,3 @@ var config = {
 };
 
 var game = new Phaser.Game(config);
-/*game.scene.add('PlayScene', PlayScene)*/
