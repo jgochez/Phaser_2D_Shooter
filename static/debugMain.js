@@ -64,13 +64,20 @@ class GameScene extends Phaser.Scene {
         this.load.image('big-asteroid', 'static/images/asteroids-sprite.png');
         this.load.image('exhaust', 'static/images/ship-exhaust1.png');
         this.load.image('laser-beam', 'static/images/beams.png');
-        this.load.audio('mediumLaser', 'static/audio/mediumFireRateLaser.mp3');
+        
     
         // new images
         this.load.image('enemy', 'static/images/enemy-ship.webp');
         this.load.image('ship-two', 'static/images/space-ship2-1.png');
         this.load.image('exhaust-two', 'static/images/exhaust-effects-blue.jpg')
         this.load.image('expl', 'static/images/exp.jpeg');
+
+
+        // load audio
+        this.load.audio('mediumLaser', 'static/audio/mediumFireRateLaser.mp3');
+        this.load.audio('asteroidDestroyed', 'static/audio/asteroidDestroy.mp3');
+        this.load.audio('secondShipEngine', 'static/audio/engine2.mp3');
+        this.load.audio('theme', 'static/audio/theme1.mp3');
     
     }
 
@@ -92,6 +99,11 @@ class GameScene extends Phaser.Scene {
             callbackScope: this,
             loop: true
         })
+
+        let theme = this.sound.add('theme');
+        // theme.on('looped', listener);
+        theme.setLoop(true);
+        theme.play();
         
         // main-ship logic
         this.main_ship = this.physics.add.sprite(400, 630, 'ship');
@@ -148,6 +160,7 @@ class GameScene extends Phaser.Scene {
     
         // second ship boosters
         
+        
         var booster_count = .08
         var boosterOffset = -.03
         var boosterOffsetY = -.06
@@ -169,9 +182,19 @@ class GameScene extends Phaser.Scene {
     }
     
          // laser-asteroid detection
+        let asteroidDestroyed = this.sound.add("asteroidDestroyed");
+         
+         this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, function(laser, asteroid){
     
-         this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, asteroidToLaser);
-        
+            asteroid.destroy();
+            
+            if (!asteroidDestroyed.isPlaying){
+            asteroidDestroyed.play();
+            }
+            // laser.disableBody(false, true)
+        }, null, this);
+
+
          // ship-asteroid detection
      
          this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, asteroidToShip);
@@ -342,7 +365,7 @@ function addEventd(){
 function playerMovement(){
     // moving ship with keys
     const speed = 8;
-
+    //let secondShipEngine = this.sound.add("secondShipEngine");
     if (this.cursors.left.isDown) {
         this.main_ship.x -= speed;
         socket.emit('player_move', { player: 'main_x', x: this.main_ship.x });
@@ -357,9 +380,13 @@ function playerMovement(){
         socket.emit('player_move', { player: 'main_y', y: this.main_ship.y });
     }
 
+    //if (secondShipEngine.isPlaying){
+    //    secondShipEngine.stop();
+   // }
     // moving second ship with keys
     if (this.keyA.isDown) {
         this.second_ship.x -= speed;
+    //    secondShipEngine.play();
         socket.emit('player_move', { player: 'sec_x', x: this.second_ship.x });
     } else if (this.keyD.isDown) {
         this.second_ship.x += speed;
@@ -388,12 +415,13 @@ function linearInterpolation() {
 }
 
 
-function asteroidToLaser(laser, asteroid){
+
+// function asteroidToLaser(laser, asteroid){
     
-    asteroid.destroy();
-    
+//    asteroid.destroy();
+
     // laser.disableBody(false, true)
-}
+// }
 
 
 function asteroidToShip(ship, asteroid) {    
