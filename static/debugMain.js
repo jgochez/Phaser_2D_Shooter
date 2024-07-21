@@ -101,7 +101,6 @@ class GameScene extends Phaser.Scene {
         })
 
         let theme = this.sound.add('theme');
-        // theme.on('looped', listener);
         theme.setLoop(true);
         theme.play();
         
