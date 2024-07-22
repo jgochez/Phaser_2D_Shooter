@@ -144,11 +144,17 @@ class GameScene extends Phaser.Scene {
             // laser.disableBody(false, true)
         }, null, this);
         
-        this.overlapLaser2 = this.physics.add.overlap(this.laserGroup2, this.asteroidsGroup, asteroidToLaser2);
-
+        this.overlapLaser2 = this.physics.add.overlap(this.laserGroup2, this.asteroidsGroup, function(laser, asteroid){
+            
+            asteroid.destroy();
+            score2 += 10;
+    
+            if (!asteroidDestroyed.isPlaying){
+            asteroidDestroyed.play();
+            }
+        }, null, this);
 
          // ship-asteroid detection
-    
          this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, asteroidToShip);
          this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, asteroidToShip);
      
@@ -377,17 +383,6 @@ function linearInterpolation() {
 
 // * Converted this function to an anonymous function in the laser asteroid detection section
 // function asteroidToLaser(laser, asteroid){
-    
-function asteroidToLaser2(laser, asteroid){
-    
-    asteroid.destroy();
-    score2 += 10;
-    
-    if (!asteroidDestroyed.isPlaying){
-        asteroidDestroyed.play();
-    // laser.disableBody(false, true)
-}
-
 
 function asteroidToShip(ship, asteroid) {    
 
