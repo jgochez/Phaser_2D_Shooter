@@ -231,8 +231,6 @@ let lastUpdatedTime = 0;
 let socket;
 var score1 = 0;
 var score2 = 0;
-var scoreText1;
-var scoreText2;
 
 class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
