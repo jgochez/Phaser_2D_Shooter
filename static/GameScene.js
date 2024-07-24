@@ -3,6 +3,7 @@ class GameScene extends Phaser.Scene {
     constructor() {
         super("GameScene");
     }
+
     preload() {
         // loading images
         this.load.image('space', 'static/images/background1.jpeg');
@@ -45,6 +46,12 @@ class GameScene extends Phaser.Scene {
             callbackScope: this,
             loop: true
         })
+
+        // Score display
+        this.scoreText1 = this.add.text(16, 16, 'score: 0', { fontSize: '32px' });
+        this.scoreText1.setDepth(10);
+        this.scoreText2 = this.add.text(550, 16, 'score: 0', { fontSize: '32px'});
+        this.scoreText2.setDepth(10);
         
 
         let theme = this.sound.add('theme');
@@ -62,21 +69,19 @@ class GameScene extends Phaser.Scene {
     
         // ship laser-logic
         this.laserGroup = new LaserGroup(this);
+        this.laserGroup2 = new LaserGroup(this);
         this.laserGroup.setDepth(1);
         // event-listening for laser for main ship
         this.input.on( 'pointerdown', pointer => {
             // begin shooting
             this.laserGroup.fireLaser(this.main_ship.x, this.main_ship.y - 50);
             mediumFireRateLaser.play();
-        });
-        
-        
+        });        
     
         // event-listening for laser for second ship
-        var spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
-    
+        var spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)    
         spacebar.on( 'down', pointer => {
-            this.laserGroup.fireLaser(this.second_ship.x, this.second_ship.y - 50)
+            this.laserGroup2.fireLaser(this.second_ship.x, this.second_ship.y - 50)
             mediumFireRateLaser.play();
         })
     
@@ -95,17 +100,16 @@ class GameScene extends Phaser.Scene {
             followOffset: { y: this.main_ship.height * 0.081}
     
         })
+
         this.emitter.setDepth(1);
     
         // second ship logic
-    
         this.second_ship = this.physics.add.sprite(700, 630, 'ship-two');
         this.second_ship.setScale(.15);
         this.second_ship.setDepth(1);
         this.second_ship.setCollideWorldBounds(true);
     
-        // second ship boosters
-        
+        // second ship boosters        
         var booster_count = .08
         var boosterOffset = -.03
         var boosterOffsetY = -.06
@@ -132,6 +136,7 @@ class GameScene extends Phaser.Scene {
         this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, function(laser, asteroid){
     
             asteroid.destroy();
+            score1 += 10;
             
             if (!asteroidDestroyed.isPlaying){
             asteroidDestroyed.play();
@@ -139,8 +144,17 @@ class GameScene extends Phaser.Scene {
             // laser.disableBody(false, true)
         }, null, this);
         
+        this.overlapLaser2 = this.physics.add.overlap(this.laserGroup2, this.asteroidsGroup, function(laser, asteroid){
+            
+            asteroid.destroy();
+            score2 += 10;
+    
+            if (!asteroidDestroyed.isPlaying){
+            asteroidDestroyed.play();
+            }
+        }, null, this);
+
          // ship-asteroid detection
-     
          this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, asteroidToShip);
          this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, asteroidToShip);
      
@@ -148,10 +162,7 @@ class GameScene extends Phaser.Scene {
          // enemy ships
          this.enemy = this.physics.add.sprite(100, 200, 'enemy');
          this.enemy.setScale(.15);
-         this.enemy.setCollideWorldBounds(true);
-     
-     
-    
+         this.enemy.setCollideWorldBounds(true);    
     
         // Listen for position updates
         socket.on('update_position', (data) => {
@@ -180,12 +191,17 @@ class GameScene extends Phaser.Scene {
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
     }
     
     update(time, delta) {
         // moving background logic
         this.tileSprite.tilePositionY -= 5;
-    
+
+        // Score update
+        this.scoreText1.setText('score: ' + score1);
+        this.scoreText2.setText('score: ' + score2);  // to-do: score1 is rising to 1200 before any lasers fired
+        
         // Ship Movement
         playerMovement.call(this);
         linearInterpolation.call(this);
@@ -205,15 +221,16 @@ class GameScene extends Phaser.Scene {
         const asteroid = new Asteroid(this, 0, 0, 'big-asteroid', 0).setScale(Math.random() * 1);
         this.asteroidsGroup.add(asteroid, true);
         this.asteroidsArray.push(asteroid);
-    
-    
-        
+
     }
 }
+
 let serverShip1Position = { x: 400, y: 630 };
 let serverShip2Position = { x: 700, y: 630 };
 let lastUpdatedTime = 0;
 let socket;
+var score1 = 0;
+var score2 = 0;
 
 class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
@@ -224,6 +241,7 @@ class Asteroid extends Phaser.Physics.Arcade.Sprite {
         this.direction = 0;
         this.factor = 0;
     }
+
     launch (shipX, shipY) {
         this.orbiting = true;
         this.setActive(true);
@@ -241,10 +259,10 @@ class Asteroid extends Phaser.Physics.Arcade.Sprite {
             this.direction = Math.atan(m);
         }
         this.angleRotation = Phaser.Math.RND.between(0.2, 0.9);
-    }
+
+    }    
     
-    
-      update (time, delta) {
+    update (time, delta) {
         this.x += this.factor * Math.cos(this.direction) * this.speed * delta;
         this.y += Math.cos(this.direction) * this.speed * delta;
         this.angle += this.angleRotation;
@@ -254,7 +272,8 @@ class Asteroid extends Phaser.Physics.Arcade.Sprite {
             this.setVisible(false);
             this.destroy();
         }
-}
+    }
+
     isOrbiting() {
         return this.orbiting;
     }
@@ -262,6 +281,7 @@ class Asteroid extends Phaser.Physics.Arcade.Sprite {
 }
 
 class Laser extends Phaser.Physics.Arcade.Sprite {
+
     constructor(scene, x, y) {
         super(scene, x, y, 'laser-beam');
     }
@@ -280,9 +300,11 @@ class Laser extends Phaser.Physics.Arcade.Sprite {
             this.setVisible(false);
         }
     }
+
 }
 
 class LaserGroup extends Phaser.Physics.Arcade.Group {
+
     constructor(scene) {
         super(scene.physics.world, scene);
         this.createMultiple({
@@ -300,6 +322,7 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
             laser.fire(x, y);
         }
     }
+
 }
 
 function addEventd(){
@@ -343,6 +366,7 @@ function playerMovement(){
 
 // Linear Interpolation for ships
 function linearInterpolation() {
+
     let now = performance.now();
     let delta = now - lastUpdatedTime;
     let interpolationFactor = Math.min(delta / 5000, 1);
@@ -352,17 +376,11 @@ function linearInterpolation() {
 
     this.second_ship.x = this.second_ship.x + (serverShip2Position.x - this.second_ship.x) * interpolationFactor;
     this.second_ship.y = this.second_ship.y + (serverShip2Position.y - this.second_ship.y) * interpolationFactor;
-}
 
+}
 
 // * Converted this function to an anonymous function in the laser asteroid detection section
 // function asteroidToLaser(laser, asteroid){
-    
-//    asteroid.destroy();
-    
-    // laser.disableBody(false, true)
-// }
-
 
 function asteroidToShip(ship, asteroid) {    
 
