@@ -58,7 +58,7 @@ function renderGameState(scene) {
     for (let asteroid of asteroids) {
         if (asteroid.active) {
             let a = scene.asteroidsGroup.create(asteroid.x, asteroid.y, 'big-asteroid');
-            a.setScale(asteroid.scale);  
+            a.setScale(asteroid.scale);
         }
     }
 }
