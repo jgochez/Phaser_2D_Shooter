@@ -9,12 +9,13 @@ CMD ["python", "app.py"]
 #----------------------------
 # Google Compute Engine Steps
 #----------------------------
-# (1) Containerize Program:
+# (1) Containerize Program: ***
 
-#   docker build -t phaser2d-image .
-#   docker run -d --name phaser2d-container -P phaser2d-image
+#   docker build -t phaser2d-image . (add)
+#   docker rmi phaser2d-image (delete)
+#   docker run -d --name phaser2d-container -P phaser2d-image (run locally)
 
-# (2) Deploy Container to GCP Artifact Registry:
+# (2) Deploy Container to GCP Artifact Registry: ***
 
 #   gcloud builds submit --tag gcr.io/a3-gochezjo/phaser2d-image .
 
@@ -22,14 +23,15 @@ CMD ["python", "app.py"]
 
 #   Enable Cloud Build API, Artifact Registry API, Compute Engine API
 #   Copy Image Path: gcr.io/a3-gochezjo/phaser2d-image
+#   Select correct Image on Path
 
-# (4) Create a VM Instance:
+# (4) Create a VM Instance: 
 
 #   Machine type: e2-micro(2 vCPU, 1 core, 1 GB)
 #   Container: gcr.io/a3-gochezjo/phaser2d-image
 #   Firewall: HTTP, HTTPS
 
-# (5) Create Firewall Rule:
+# (5) Create Firewall Rule: 
 
 #   Go to VPC Network -> Firewall
 #   Targets: All instances
@@ -38,4 +40,4 @@ CMD ["python", "app.py"]
 
 # (6) Access Program:
 
-#   External IP/Port: 34.132.95.152:5555
+#   External IP/Port: 34.70.215.241:5555
