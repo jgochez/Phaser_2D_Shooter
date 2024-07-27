@@ -134,23 +134,24 @@ class GameScene extends Phaser.Scene {
         let asteroidDestroyed = this.sound.add("asteroidDestroyed");
          
         this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, function(laser, asteroid){
-    
-            asteroid.destroy();
-            score1 += 10;
-            
-            if (!asteroidDestroyed.isPlaying){
-            asteroidDestroyed.play();
+            if (laser.active && asteroid.active) {
+                asteroid.destroy();
+                score1 += 10;
+                
+                if (!asteroidDestroyed.isPlaying){
+                asteroidDestroyed.play();
+                }
             }
-            // laser.disableBody(false, true)
         }, null, this);
         
         this.overlapLaser2 = this.physics.add.overlap(this.laserGroup2, this.asteroidsGroup, function(laser, asteroid){
-            
-            asteroid.destroy();
-            score2 += 10;
-    
-            if (!asteroidDestroyed.isPlaying){
-            asteroidDestroyed.play();
+            if (laser.active && asteroid.active) {
+                asteroid.destroy();
+                score2 += 10;
+                
+                if (!asteroidDestroyed.isPlaying){
+                asteroidDestroyed.play();
+                }
             }
         }, null, this);
 
