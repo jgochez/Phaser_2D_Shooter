@@ -18,6 +18,7 @@ class GameScene extends Phaser.Scene {
         this.load.image('ship-two', 'static/images/space-ship2-1.png');
         this.load.image('exhaust-two', 'static/images/exhaust-effects-blue.jpg')
         this.load.image('expl', 'static/images/exp.jpeg');
+        this.load.image('power-up', 'static/images/powerup.png');
 
 
         // load audio
@@ -114,23 +115,27 @@ class GameScene extends Phaser.Scene {
         var boosterOffset = -.03
         var boosterOffsetY = -.06
         for (var i = 1; i < 5; i++) {
-        this.emitter_two = this.add.particles(0, 0, 'exhaust-two',{
-            quantity: 5,
-            speedY: { min: 10, max: 30 },
-            speedX: { min: -10, max: 10 },
-            scale: { start: 0.065, end: .0065 },
-            follow: this.second_ship,
-            scale: 0.2,
-            accelerationY: 1000,
-            lifespan: { min: 100, max: 300 },
-            followOffset: { y: this.second_ship.height * 0.075 + boosterOffsetY , x: this.second_ship.width * (booster_count += boosterOffset)},
-            alpha: { random: [0.1, 0.8] },
+            this.emitter_two = this.add.particles(0, 0, 'exhaust-two',{
+                quantity: 5,
+                speedY: { min: 10, max: 30 },
+                speedX: { min: -10, max: 10 },
+                scale: { start: 0.065, end: .0065 },
+                follow: this.second_ship,
+                scale: 0.2,
+                accelerationY: 1000,
+                lifespan: { min: 100, max: 300 },
+                followOffset: { y: this.second_ship.height * 0.075 + boosterOffsetY , x: this.second_ship.width * (booster_count += boosterOffset)},
+                alpha: { random: [0.1, 0.8] },
             
-        })
-        this.emitter_two.setDepth(1);
-    }
-    
-         // laser-asteroid detection
+            })
+            this.emitter_two.setDepth(1);
+        }
+
+        // Create power-up
+        // this.powerup = this.physics.add.sprite(400, 400, 'power-up');
+        // this.powerup.setScale(.2);
+
+        // laser-asteroid detection
         let asteroidDestroyed = this.sound.add("asteroidDestroyed");
          
         this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, function(laser, asteroid){
@@ -158,6 +163,20 @@ class GameScene extends Phaser.Scene {
          // ship-asteroid detection
          this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, asteroidToShip);
          this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, asteroidToShip);
+
+        // ship-powerup detection
+        GameScene.speed1 = 4;
+        GameScene.speed2 = 4;
+
+        this.overlapPowerup1 = this.physics.add.overlap(this.main_ship, this.powerup, function(ship, powerup) {
+            GameScene.speed1 = 8;
+            powerup.destroy();
+        });
+
+        this.overlapPowerup2 = this.physics.add.overlap(this.second_ship, this.powerup, function(ship, powerup) {
+            GameScene.speed2 = 8;
+            powerup.destroy();
+        })
      
      
          // enemy ships
@@ -204,7 +223,9 @@ class GameScene extends Phaser.Scene {
         this.scoreText2.setText('score: ' + score2);  // to-do: score1 is rising to 1200 before any lasers fired
         
         // Ship Movement
-        playerMovement.call(this);
+        let speed1 = GameScene.speed1;
+        let speed2 = GameScene.speed2;
+        playerMovement.call(this, speed1, speed2);
         linearInterpolation.call(this);
     
     
@@ -330,36 +351,34 @@ function addEventd(){
 
 }
 
-function playerMovement(){
+function playerMovement(speed1, speed2) {
     // moving ship with keys
-    const speed = 8;
-
     if (this.cursors.left.isDown) {
-        this.main_ship.x -= speed;
+        this.main_ship.x -= speed1;
         socket.emit('player_move', { player: 'main_x', x: this.main_ship.x });
     } else if (this.cursors.right.isDown) {
-        this.main_ship.x += speed;
+        this.main_ship.x += speed1;
         socket.emit('player_move', { player: 'main_x', x: this.main_ship.x });
     } else if (this.cursors.up.isDown) {
-        this.main_ship.y -= speed;
+        this.main_ship.y -= speed1;
         socket.emit('player_move', { player: 'main_y', y: this.main_ship.y });
     } else if (this.cursors.down.isDown) {
-        this.main_ship.y += speed;
+        this.main_ship.y += speed1;
         socket.emit('player_move', { player: 'main_y', y: this.main_ship.y });
     }
 
     // moving second ship with keys
     if (this.keyA.isDown) {
-        this.second_ship.x -= speed;
+        this.second_ship.x -= speed2;
         socket.emit('player_move', { player: 'sec_x', x: this.second_ship.x });
     } else if (this.keyD.isDown) {
-        this.second_ship.x += speed;
+        this.second_ship.x += speed2;
         socket.emit('player_move', { player: 'sec_x', x: this.second_ship.x });
     } else if (this.keyW.isDown) {
-        this.second_ship.y -= speed;
+        this.second_ship.y -= speed2;
         socket.emit('player_move', { player: 'sec_y', y: this.second_ship.y });
     } else if (this.keyS.isDown) {
-        this.second_ship.y += speed;
+        this.second_ship.y += speed2;
         socket.emit('player_move', { player: 'sec_y', y: this.second_ship.y });
     }
 
