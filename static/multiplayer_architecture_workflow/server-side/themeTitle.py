@@ -96,8 +96,6 @@ def client_connected():
 @socketio.on('disconnect')
 def client_disconnected():
     print('Client disconnected:', request.sid)
-    reset_game_state()
-    emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions, 'scores': scores}, broadcast=True)
 
 @socketio.on('player_move')
 def handle_player_move(data):
@@ -142,8 +140,8 @@ def reset_game_state():
         'second': 0
     }
     ready_players = {
-        'main': False,
-        'second': False
+        'main': True,
+        'second': True
     }
 
 @app.route('/')

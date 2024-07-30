@@ -55,30 +55,6 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.isGameOver = false;
-        this.startTime = performance.now(); // Start the timer
-        this.setupGameScene();
-        this.setupInputHandlers();
-
-        socket.on('game_state', (state) => {
-            if (!this.isGameOver) {
-                asteroids = state.asteroids;
-                lasers = state.lasers;
-                serverShip1Position = state.ships.main;
-                serverShip2Position = state.ships.second;
-                scoreMain = state.scores.main;
-                scoreSecond = state.scores.second;
-                lastUpdatedTime = performance.now();
-                renderGameState(this);
-                scoreTextMain.setText('Player 1: ' + scoreMain);
-                scoreTextSecond.setText('Player 2: ' + scoreSecond);
-            }
-        });
-
-        this.theme.play();
-    }
-
-    setupGameScene() {
         this.tileSprite = this.add.tileSprite(0, 0, innerWidth, innerHeight, 'space');
         this.tileSprite.setOrigin(0);
         this.tileSprite.setScrollFactor(0, 1);
@@ -87,104 +63,54 @@ class GameScene extends Phaser.Scene {
         createShips.call(this);
 
         this.laserGroup = new LaserGroup(this).setDepth(1);
-
-        scoreTextMain = this.add.text(16, 16, 'Player 1: 0', { fontSize: '24px', fill: '#fff' });
-        scoreTextSecond = this.add.text(616, 16, 'Player 2: 0', { fontSize: '24px', fill: '#fff' });
-        this.timerText = this.add.text(400, 16, '00:00', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5); 
-
-        this.theme = this.sound.add('theme', { volume: 0.2, loop: true });
-        this.mediumFireRateLaser = this.sound.add('mediumLaser', { volume: 0.1 });
-        this.asteroidDestroyed = this.sound.add('asteroidDestroyed', { volume: 0.2 });
-    }
-
-    setupInputHandlers() {
         this.input.on('pointerdown', fireSecondShipLaser, this);
         const spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         spacebar.on('down', fireMainShipLaser, this);
+
+        this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, (laser, asteroid) => asteroidToLaser.call(this, laser, asteroid));
+        this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, asteroidToShip, null, this);
+        this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, asteroidToShip, null, this);
+
+        socket.on('game_state', (state) => {
+            asteroids = state.asteroids;
+            lasers = state.lasers;
+            serverShip1Position = state.ships.main;
+            serverShip2Position = state.ships.second;
+            scoreMain = state.scores.main;
+            scoreSecond = state.scores.second;
+            lastUpdatedTime = performance.now();
+            renderGameState(this);
+            scoreTextMain.setText('Player 1: ' + scoreMain);
+            scoreTextSecond.setText('Player 2: ' + scoreSecond);
+        });
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keyA = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+        scoreTextMain = this.add.text(16, 16, 'Player 1: 0', { fontSize: '24px', fill: '#fff' });
+        scoreTextSecond = this.add.text(616, 16, 'Player 2: 0', { fontSize: '24px', fill: '#fff' });
+
+        this.theme = this.sound.add('theme', { volume: 0.2, loop: true });
+        this.mediumFireRateLaser = this.sound.add('mediumLaser', { volume: 0.1 });
+        this.asteroidDestroyed = this.sound.add('asteroidDestroyed', { volume: 0.2 });
+
+        this.theme.play();
     }
 
     update() {
         this.tileSprite.tilePositionY -= 5;
+        playerMovement.call(this);
+        linearInterpolation.call(this);
 
-        if (!this.isGameOver) {
-            playerMovement.call(this);
-            linearInterpolation.call(this);
-
-            lasers = lasers.filter((laser) => laser.active);
-            for (const laser of lasers) {
-                this.laserGroup.fireLaser(laser.x, laser.y);
-            }
-
-            checkGameOver.call(this);
-
-            // Update the timer
-            const elapsedTime = Math.floor((performance.now() - this.startTime) / 1000);
-            const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
-            const seconds = String(elapsedTime % 60).padStart(2, '0');
-            this.timerText.setText(minutes + ':' + seconds);
+        lasers = lasers.filter((laser) => laser.active);
+        for (const laser of lasers) {
+            this.laserGroup.fireLaser(laser.x, laser.y);
         }
-    }
 
-    showGameOverPrompt() {
-        this.isGameOver = true;
-        const winner = scoreMain > scoreSecond ? 'Player 1' : (scoreMain < scoreSecond ? 'Player 2' : 'Tie');
-        const winnerText = `Winner: ${winner}`;
-        const elapsedTime = Math.floor((performance.now() - this.startTime) / 1000);
-        const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
-        const seconds = String(elapsedTime % 60).padStart(2, '0');
-        
-        this.add.text(400, 300, 'Game Over', { fontSize: '64px', fill: '#fff' }).setOrigin(0.5);
-        this.add.text(400, 400, winnerText, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
-        this.add.text(400, 450, minutes + ':' + seconds, { fontSize: '42px', fill: '#fff' }).setOrigin(0.5); 
-    }
-}
-
-// Laser Class
-class Laser extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y) {
-        super(scene, x, y, 'laser-beam');
-    }
-
-    fire(x, y) {
-        this.body.reset(x, y);
-        this.setActive(true);
-        this.setVisible(true);
-        this.setVelocityY(-900);
-    }
-
-    preUpdate(time, delta) {
-        super.preUpdate(time, delta);
-        if (this.y <= 0) {
-            this.setActive(false);
-            this.setVisible(false);
-        }
-    }
-}
-
-// LaserGroup Class
-class LaserGroup extends Phaser.Physics.Arcade.Group {
-    constructor(scene) {
-        super(scene.physics.world, scene);
-        this.createMultiple({
-            classType: Laser,
-            frameQuantity: 100,
-            active: false,
-            visible: false,
-            key: 'laser-beam'
-        });
-    }
-
-    fireLaser(x, y) {
-        const laser = this.getFirstDead(false);
-        if (laser) {
-            laser.fire(x, y);
-        }
+        checkGameOver.call(this);
     }
 }
 
@@ -342,9 +268,7 @@ function linearInterpolation() {
 }
 
 function renderGameState(scene) {
-    if (scene.asteroidsGroup) {
-        scene.asteroidsGroup.clear(true, true);
-    }
+    scene.asteroidsGroup.clear(true, true);
 
     for (let asteroid of asteroids) {
         if (asteroid.active) {
@@ -360,12 +284,8 @@ function renderGameState(scene) {
         }
     });
 
-    if (scoreTextMain) {
-        scoreTextMain.setText('Player 1: ' + scoreMain);
-    }
-    if (scoreTextSecond) {
-        scoreTextSecond.setText('Player 2: ' + scoreSecond);
-    }
+    scoreTextMain.setText('Player 1: ' + scoreMain);
+    scoreTextSecond.setText('Player 2: ' + scoreSecond);
 }
 
 function asteroidToLaser(laser, asteroid) {
@@ -403,6 +323,67 @@ function asteroidToShip(ship, asteroid) {
 
 function checkGameOver() {
     if (!mainShipAlive && !secondShipAlive) {
-        this.showGameOverPrompt();
+        socket.emit('restart_game');
+        resetGame.call(this);
+    }
+}
+
+function resetGame() {
+    asteroids = [];
+    
+    if (this.main_ship) {
+        this.main_ship.destroy();
+        this.main_ship = null; 
+    }
+    if (this.second_ship) {
+        this.second_ship.destroy();
+        this.second_ship = null; 
+    }
+
+    mainShipAlive = true;
+    secondShipAlive = true;
+    createShips.call(this);
+}
+
+// Laser Class
+class Laser extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y) {
+        super(scene, x, y, 'laser-beam');
+    }
+
+    fire(x, y) {
+        this.body.reset(x, y);
+        this.setActive(true);
+        this.setVisible(true);
+        this.setVelocityY(-900);
+    }
+
+    preUpdate(time, delta) {
+        super.preUpdate(time, delta);
+        if (this.y <= 0) {
+            this.setActive(false);
+            this.setVisible(false);
+        }
+    }
+}
+
+// LaserGroup Class
+class LaserGroup extends Phaser.Physics.Arcade.Group {
+    constructor(scene) {
+        super(scene.physics.world, scene);
+        this.createMultiple({
+            classType: Laser,
+            frameQuantity: 100,
+            active: false,
+            visible: false,
+            key: 'laser-beam'
+        });
+    }
+
+    fireLaser(x, y) {
+        const laser = this.getFirstDead(false);
+        if (laser) {
+            laser.fire(x, y);
+        }
     }
 }
