@@ -14,18 +14,10 @@ socketio = SocketIO(app, async_mode='eventlet')
 asteroids = []
 lasers = []
 ship_positions = {
-    'main': {'x': 400, 'y': 630, 'dx': 0, 'dy': 0, 'alive': True},
-    'second': {'x': 700, 'y': 630, 'dx': 0, 'dy': 0, 'alive': True}
+    'main': {'x': 400, 'y': 630, 'dx': 0, 'dy': 0},
+    'second': {'x': 700, 'y': 630, 'dx': 0, 'dy': 0}
 }
 MAX_ASTEROIDS = 20
-scores = {
-    'main': 0,
-    'second': 0
-}
-ready_players = {
-    'main': False,
-    'second': False
-}
 
 def create_asteroid():
     x_origin = random.randint(0, 800)
@@ -43,7 +35,7 @@ def create_asteroid():
     }
 
 def update_game_state():
-    global asteroids, lasers, ship_positions, scores
+    global asteroids, lasers, ship_positions
     while True:
         active_asteroids = [a for a in asteroids if a['active']]
         for asteroid in active_asteroids:
@@ -70,18 +62,16 @@ def update_game_state():
                 for asteroid in active_asteroids:
                     if asteroid['active'] and is_collision(laser, asteroid):
                         asteroid['active'] = False
-                        laser['active'] = False
-                        scores[laser['player']] += 5
+                        laser['active'] = False  
 
-        socketio.emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions, 'scores': scores})
+        socketio.emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions})
         socketio.sleep(0.016)
 
 def add_random_asteroids():
     global asteroids
     while True:
-        if ready_players.get('main') and ready_players.get('second'):
-            if len([a for a in asteroids if a['active']]) < MAX_ASTEROIDS:
-                asteroids.append(create_asteroid())
+        if len([a for a in asteroids if a['active']]) < MAX_ASTEROIDS:
+            asteroids.append(create_asteroid())
         socketio.sleep(0.5)
 
 def is_collision(laser, asteroid):
@@ -91,13 +81,11 @@ def is_collision(laser, asteroid):
 @socketio.on('connect')
 def client_connected():
     print('New client connected:', request.sid)
-    emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions, 'scores': scores, 'ready': ready_players}, broadcast=True)
+    emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions}, broadcast=True)
 
 @socketio.on('disconnect')
 def client_disconnected():
     print('Client disconnected:', request.sid)
-    reset_game_state()
-    emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions, 'scores': scores}, broadcast=True)
 
 @socketio.on('player_move')
 def handle_player_move(data):
@@ -110,40 +98,21 @@ def handle_fire_laser(data):
     laser = {
         'x': data['x'],
         'y': data['y'],
-        'active': True,
-        'player': data['player']
+        'active': True
     }
     lasers.append(laser)
 
 @socketio.on('restart_game')
 def handle_restart_game():
     reset_game_state()
-    emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions, 'scores': scores}, broadcast=True)
-    emit('reset_ready_state', broadcast=True)
-
-@socketio.on('player_ready')
-def handle_player_ready(data):
-    player = data['player']
-    ready_players[player] = True
-    emit('player_ready', ready_players, broadcast=True)
-    if all(ready_players.values()):
-        emit('start_game', broadcast=True)
 
 def reset_game_state():
-    global asteroids, lasers, ship_positions, scores, ready_players
+    global asteroids, lasers, ship_positions
     asteroids = []
     lasers = []
     ship_positions = {
-        'main': {'x': 400, 'y': 630, 'dx': 0, 'dy': 0, 'alive': True},
-        'second': {'x': 700, 'y': 630, 'dx': 0, 'dy': 0, 'alive': True}
-    }
-    scores = {
-        'main': 0,
-        'second': 0
-    }
-    ready_players = {
-        'main': False,
-        'second': False
+        'main': {'x': 400, 'y': 630, 'dx': 0, 'dy': 0},
+        'second': {'x': 700, 'y': 630, 'dx': 0, 'dy': 0}
     }
 
 @app.route('/')

@@ -56,7 +56,6 @@ class GameScene extends Phaser.Scene {
 
     create() {
         this.isGameOver = false;
-        this.startTime = performance.now(); // Start the timer
         this.setupGameScene();
         this.setupInputHandlers();
 
@@ -90,7 +89,6 @@ class GameScene extends Phaser.Scene {
 
         scoreTextMain = this.add.text(16, 16, 'Player 1: 0', { fontSize: '24px', fill: '#fff' });
         scoreTextSecond = this.add.text(616, 16, 'Player 2: 0', { fontSize: '24px', fill: '#fff' });
-        this.timerText = this.add.text(400, 16, '00:00', { fontSize: '32px', fill: '#fff' }).setOrigin(0.5); 
 
         this.theme = this.sound.add('theme', { volume: 0.2, loop: true });
         this.mediumFireRateLaser = this.sound.add('mediumLaser', { volume: 0.1 });
@@ -111,37 +109,27 @@ class GameScene extends Phaser.Scene {
 
     update() {
         this.tileSprite.tilePositionY -= 5;
-
+    
         if (!this.isGameOver) {
             playerMovement.call(this);
             linearInterpolation.call(this);
-
+    
             lasers = lasers.filter((laser) => laser.active);
             for (const laser of lasers) {
                 this.laserGroup.fireLaser(laser.x, laser.y);
             }
-
+    
             checkGameOver.call(this);
-
-            // Update the timer
-            const elapsedTime = Math.floor((performance.now() - this.startTime) / 1000);
-            const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
-            const seconds = String(elapsedTime % 60).padStart(2, '0');
-            this.timerText.setText(minutes + ':' + seconds);
         }
     }
-
+    
     showGameOverPrompt() {
         this.isGameOver = true;
-        const winner = scoreMain > scoreSecond ? 'Player 1' : (scoreMain < scoreSecond ? 'Player 2' : 'Tie');
+        const winner = scoreMain > scoreSecond ? 'Player 1' : (scoreMain < scoreSecond ? 'Player 2' : 'No one, it\'s a tie');
         const winnerText = `Winner: ${winner}`;
-        const elapsedTime = Math.floor((performance.now() - this.startTime) / 1000);
-        const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
-        const seconds = String(elapsedTime % 60).padStart(2, '0');
         
         this.add.text(400, 300, 'Game Over', { fontSize: '64px', fill: '#fff' }).setOrigin(0.5);
         this.add.text(400, 400, winnerText, { fontSize: '32px', fill: '#fff' }).setOrigin(0.5);
-        this.add.text(400, 450, minutes + ':' + seconds, { fontSize: '42px', fill: '#fff' }).setOrigin(0.5); 
     }
 }
 
