@@ -39,14 +39,14 @@ class EnemyShips extends Phaser.Scene {
 
 
     create () {
+        
 
         // enemy lasers
-        // this.enemyLasers = this.add.group();
         this.enemies = this.add.group();
         this.enemyLasers = this.add.group();
 
         this.time.addEvent({
-            delay: 1000, // this can be changed to a higher value like 1000
+            delay: 1100, 
             callback: function() {
               var enemyNew = new GunShip(
                 this,
@@ -62,56 +62,6 @@ class EnemyShips extends Phaser.Scene {
             loop: true
           });
         
-
-
-        // enemy logic and spawning
-        // this.enemiesGroup = this.physics.add.group();
-        
-        // var enemies = this.enemiesGroup.create(Phaser.Math.Between(20, 600) , -10, 'enemy');
-        
-        // var i = 0;
-        // while (i < 10) {
-        //     var x = this.enemiesGroup.create( (i * 20) * 10 , 60, 'enemy').setScale(.14);
-        //     x;
-        //     x.body.setAllowGravity(false);
-        //     x.setDepth(1);
-        //     x.setCollideWorldBounds(true);
-        //     x.body.velocity.x = -60;
-        //     // x.body.velocity.y = 30
-        //     x.setBounceX(1.1);
-        //     x.setBounceY(1.1);
-        //     i++
-
-        //     this.enemyTimer = this.time.addEvent({
-        //         delay: 1500,
-        //         callback: this.changeEnemyDirection,
-        //         callbackScope: this,
-        //         loop: true
-        //     });
-            
-        
-        // }
-
-
-        // // overlap enemy and laser
-        // this.overlapEnemy = this.physics.add.overlap(this.laserGroup, this.EnemyShips, function(laser, enemy){
-    
-        //     enemy.destroy();
-            
-        //     // laser.disableBody(false, true)
-        // }, null, this);
-
-
-        
-        // this.enemiesArray = [];
-        // this.enemyTimedEvent = this.time.addEvent({
-        //     delay: 1000,
-        //     callback: this.addEnemy,
-        //     callbackScope: this,
-        //     loop: true
-        // })
-
-
 
 
         // moving space background
@@ -216,10 +166,7 @@ class EnemyShips extends Phaser.Scene {
             ship.destroy();
             this.emitter.stop();
             laser.destroy();
-            // if (!asteroidDestroyed.isPlaying){
-            // asteroidDestroyed.play();
-            // }
-            // laser.disableBody(false, true)
+            
         }, null, this);
 
         this.overlapEnemyLaserOne = this.physics.add.overlap(this.enemyLasers, this.second_ship, function(laser, ship) {
@@ -231,27 +178,44 @@ class EnemyShips extends Phaser.Scene {
 
         }, null, this );
 
-        // main ship laser versus enemy ship
-
-        this.overlapLaserEnemy = this.physics.add.overlap(this.laserGroup, this.enemies, function(laser, ship) {
-            
-
-            ship.destroy()
-            laser.destroy()
+        // laser versus enemy ship
+        var count = 0
+        this.overlapLaserEnemy = this.physics.add.overlap(this.enemies, this.laserGroup, function(laser, enemy) {
+                count++
+                laser.destroy(true);
+                enemy.destroy(true);
+                // if (count >= 5) {
+                //     this.scene.start("GameScene")
+                    
+                // }
+        
 
         }, null, this);
 
+        
+
+        // main ship versus enemy ship
+        this.overlapEnemyMain = this.physics.add.overlap(this.main_ship, this.enemies, function(ship, enemy) {
             
 
-        // this.physics.add.collider(this.laserGroup, this.enemies, function(playerLaser, enemy) {
-  
-           
-        //         enemy.destroy();
-        //         playerLaser.destroy();
-              
+            ship.destroy()
+            enemy.destroy()
+            this.emitter.stop()
 
-        // });
 
+        }, null, this);
+
+         // second ship versus enemy ship
+         this.overlapEnemyMain = this.physics.add.overlap(this.second_ship, this.enemies, function(ship, enemy) {
+            
+            ship.destroy()
+            enemy.destroy()
+            this.emitter_two.stop()
+                
+            
+
+        }, null, this);
+            
 
     }
 
@@ -268,30 +232,34 @@ class EnemyShips extends Phaser.Scene {
         playerMovement.call(this);
         // linearInterpolation.call(this);
 
-
-
-        // this.enemiesArray = this.enemiesArray.filter((enemy)=> enemy.active );
-        // for (const enemy of this.enemiesArray) {
-        //     if (!enemy.isOrbiting()){
-        //         enemy.launch(this.main_ship.x, this.main_ship.y);
-        //         enemy.launch(this.second_ship.x, this.second_ship.y);
-        //     }
-        //     enemy.update(time, delta);
-        // }
-    
-        // const enemy = new EnemyShips(this, 0, 0, 'enemy', 0);
-        // this.enemiesGroup.add(enemy, true);
-        // this.enemiesArray.push(enemy);
-
         
+        // update enemy shooting
+
+        this.enemyShoot()
+
+        for (var i = 0; i < this.enemies.getChildren().length; i++) {
+            var enemy = this.enemies.getChildren()[i];
+      
+            enemy.update();
+          }
+
 
     }
 
-    // addEnemy() {
-    //     let enemy = new EnemyShips (this, 0, 0, 'enemy', 0).setScale(0.14);
-    //     this.enemiesGroup.add(enemy, true);
-    //     this.enemiesArray.push(enemy);
-    // }    
+
+    enemyShoot() {
+
+        for(var i = 0; i < this.enemies.getChildren().length; i++) { //goes through every single enemy
+            var randomEnemyShoot = Phaser.Math.Between(1, 150);
+            if (randomEnemyShoot == 1) { //10% chance to shoot
+                var laser = new EnemyLaser(this, this.enemies.getChildren()[i]);
+                this.enemyLasers.add(laser);
+            }
+        }
+    }
+
+
+    
 
  
 
@@ -362,23 +330,12 @@ class Entity extends Phaser.GameObjects.Sprite {
   }
 
 
-
-
-
-// class ChaserShip extends Entity {
-//     constructor(scene, x, y) {
-//       super(scene, x, y, "sprEnemy1", "ChaserShip");
-//       this.body.velocity.y = Phaser.Math.Between(50, 100);
-
-//     }
-//   }
-  
 class GunShip extends Entity {
     constructor(scene, x, y) {
       super(scene, x, y, "enemy", "GunShip");
       this.body.velocity.x = Phaser.Math.Between(0, 75);
     //   this.shootTimer = this.scene.time.addEvent({
-    //     delay: 1000,
+    //     delay: 2000,
     //     callback: function() {
     //       var newLaser = new EnemyLaser(
     //         this.scene,
@@ -387,6 +344,7 @@ class GunShip extends Entity {
     //       );
     //       newLaser.setScale(1);
     //       this.scene.enemyLasers.add(newLaser);
+          
     //     },
     //     callbackScope: this,
     //     loop: true
@@ -402,17 +360,25 @@ class GunShip extends Entity {
     }
   }
   
-//   class CarrierShip extends Entity {
-//     constructor(scene, x, y) {
-//       super(scene, x, y, "sprEnemy2", "CarrierShip");
-//       this.body.velocity.y = Phaser.Math.Between(50, 100);
 
-//       this.play("sprEnemy2");
-//     }
-//   }
 class EnemyLaser extends Entity {
-  constructor(scene, x, y) {
-    super(scene, x, y, "enemy-laser");
-    this.body.velocity.y = 200;
+  
+    constructor(scene, enemy) {
+        var x = enemy.x;
+        var y = enemy.y;
+    
+        super(scene, x, y, "enemy-laser");
+        scene.add.existing(this);
+    
+        // this.play("laser_anim");
+        scene.physics.world.enableBody(this);
+        this.body.velocity.y = 250;
+    }
+    
+    
+    update(){
+        if (this.y > 600) {
+            this.destroy();
+        }
+    }
   }
-}
