@@ -1,4 +1,4 @@
-// Define the TitleScene class
+// TitleScene class
 class TitleScene extends Phaser.Scene {
     constructor() {
         super({ key: 'TitleScene' });
@@ -12,8 +12,6 @@ class TitleScene extends Phaser.Scene {
         this.load.image('exhaust', 'static/images/ship-exhaust1.png');
         this.load.image('exhaust-two', 'static/images/exhaust-effects-blue.jpg');
         this.load.image('laser-beam', 'static/images/beams.png');
-
-        // Load audio
         this.load.audio('mediumLaser', 'static/audio/mediumFireRateLaser.mp3');
         this.load.audio('asteroidDestroyed', 'static/audio/asteroidDestroy.mp3');
         this.load.audio('secondShipEngine', 'static/audio/engine2.mp3');
@@ -48,7 +46,7 @@ class TitleScene extends Phaser.Scene {
     }
 }
 
-// Define the GameScene class
+// GameScene class
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
@@ -56,7 +54,7 @@ class GameScene extends Phaser.Scene {
 
     create() {
         this.isGameOver = false;
-        this.startTime = performance.now(); // Start the timer
+        this.startTime = performance.now(); 
         this.setupGameScene();
         this.setupInputHandlers();
 
@@ -224,7 +222,6 @@ function handleReady(player) {
 }
 
 function createShips() {
-    // Destroy existing emitters if they exist
     if (this.main_ship && this.main_ship.emitter) {
         this.main_ship.emitter.destroy();
     }
@@ -266,7 +263,6 @@ function createShips() {
         this.second_ship.emitters.push(emitter_two);
     }
 
-    // Reinitialize collision handlers after creating ships
     this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, asteroidToShip, null, this);
     this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, asteroidToShip, null, this);
 }
