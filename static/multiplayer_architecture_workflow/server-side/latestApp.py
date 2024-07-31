@@ -2,7 +2,7 @@ import eventlet
 eventlet.monkey_patch()
 
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, disconnect
 import random
 import math
 
@@ -10,7 +10,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode='eventlet')
 
-# Dynamic Objects
 asteroids = []
 lasers = []
 ship_positions = {
@@ -26,6 +25,7 @@ ready_players = {
     'main': False,
     'second': False
 }
+connected_clients = []
 
 def create_asteroid():
     x_origin = random.randint(0, 800)
@@ -90,12 +90,19 @@ def is_collision(laser, asteroid):
 
 @socketio.on('connect')
 def client_connected():
+    if len(connected_clients) >= 2:
+        emit('error', {'message': 'Server full.'})
+        disconnect()
+        return
+
+    connected_clients.append(request.sid)
     print('New client connected:', request.sid)
     emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions, 'scores': scores, 'ready': ready_players}, broadcast=True)
 
 @socketio.on('disconnect')
 def client_disconnected():
     print('Client disconnected:', request.sid)
+    connected_clients.remove(request.sid)
     reset_game_state()
     emit('game_state', {'asteroids': asteroids, 'lasers': lasers, 'ships': ship_positions, 'scores': scores}, broadcast=True)
 
