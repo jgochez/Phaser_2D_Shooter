@@ -35,19 +35,136 @@ class TitleScene extends Phaser.Scene {
     }
 
     preload () {
-        this.load.image('background_image', 'static/images/background.jpeg');
-    }
 
-    create () {
-        let background = this.add.sprite(0, 0, 'background_image');
-        background.setOrigin(0,0);
-        background.setScale(.25)
-        this.add.text(20, 20, "title: press enter to play")
-        const enter = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
-        enter.on( 'down', () => {this.scene.start('GameScene');})
+        this.load.audio('titleTheme', 'static/audio/titleTheme.mp3');
+
+        this.load.image('background_image', 'static/images/background.jpeg');
+        this.load.image('ship', '/static/images/ship1.png');
+        this.load.image('exhaust', '/static/images/ship-exhaust1.png');
+        this.load.image('laser-beam', '/static/images/beams.png');
+        this.load.image('start', '/static/images/start-image2.png');
+        
     }
+    
+    create () {
+        // play title theme
+        let titleTheme = this.sound.add('titleTheme');
+        titleTheme.setLoop(true);
+        titleTheme.play();
+
+        // start button
+        this.startButton = this.physics.add.sprite(700, 100, 'start')
+        this.startButton.setCollideWorldBounds();
+        this.startButton.setBounceY(1.1);
+        this.startButton.setBounceX(1.1);
+        this.startButton.setScale(.2);
+        this.startButton.setDepth(1);
+
+        this.startButton.body.velocity.y = 70;
+        this.startButton.body.velocity.x = 30;
+        this.startButton.body.setMaxVelocity(500);
+
+        // Background
+        this.tileSprite = this.add.tileSprite(0, 0, innerWidth*4, innerHeight*4, 'background_image');
+        this.tileSprite.setOrigin(0);
+        this.tileSprite.setScale(.25);
+
+        // User interface
+        this.add.text(150, 300, "2D Space Shooter", { fontSize: '48px' });
+        this.add.text(150, 400, "Shoot the Start button, or press enter to play...");
+        const enter = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+        enter.on( 'down', () => {
+        this.tweens.add({
+            targets: titleTheme,
+            volume: { from: 1, to: 0},
+            duration: 2000
+        });
+    });
+        // ship controls
+        this.ship = this.physics.add.sprite(400, 640, 'ship');
+        this.ship.setScale(.2);
+        this.ship.setDepth(1);
+        this.ship.setCollideWorldBounds( true)
+        
 
     
+
+        // WASD for movement
+        this.cursors = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
+
+        // exhuast for main menu ship
+        this.emitter;
+        this.emitter = this.add.particles(0, 0, 'exhaust',{
+    
+            quantity: 5,
+            speedY: { min: 20, max: 50 },
+            speedX: { min: -10, max: 10 },
+            scale: { start: 0.085, end: .0075 },
+            follow: this.ship,
+            scale: 0.01,
+            accelerationY: 1000,
+            lifespan: { min: 100, max: 300 },
+            followOffset: { y: this.ship.height * 0.081}
+    
+        })
+        this.emitter.setDepth(1);
+    
+   
+
+        // ship laser-logic
+        this.laserGroup = new LaserGroup(this);
+        this.laserGroup.setDepth(1);
+        // event-listening for laser for main ship
+        this.input.on( 'pointerdown', pointer => {
+            // begin shooting
+            this.laserGroup.fireLaser(this.ship.x, this.ship.y - 50);
+            // mediumFireRateLaser.play();
+        }); 
+
+        this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.startButton, function(laser, startButton){
+    
+            startButton.destroy();
+            this.tweens.add({
+                targets: titleTheme,
+                volume: { from: 1, to: 0},
+                duration: 2000
+            });
+            this.cameras.main.fadeOut(2000, 0, 0, 0, (camera, progress) => {
+                if (progress === 1) {
+                    this.scene.start('GameScene');
+                }
+            }, this) 
+        }, null, this);
+
+        
+    }
+
+    update () {
+        const speed = 8;
+
+        if (this.cursors.left.isDown) {
+            this.ship.x -= speed;
+        } else if (this.cursors.right.isDown) {
+            this.ship.x += speed;
+        } else if (this.cursors.up.isDown) {
+            this.ship.y -= speed;
+        } else if (this.cursors.down.isDown) {
+
+            this.ship.y += speed;
+        } 
+        this.tileSprite.tilePositionY += 1;
+        this.tileSprite.tilePositionX += .1;
+        const enter = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+        enter.on( 'down', () => {
+            this.cameras.main.fadeOut(2000, 0, 0, 0, (camera, progress) => {
+                if (progress === 1) {
+                    this.scene.start('GameScene');
+                }
+            }, this)           
+    })
+}
+
+
 }
 
 
@@ -70,7 +187,10 @@ class GameScene extends Phaser.Scene {
         this.load.image('enemy', 'static/images/enemy-ship.webp');
         this.load.image('ship-two', 'static/images/space-ship2-1.png');
         this.load.image('exhaust-two', 'static/images/exhaust-effects-blue.jpg')
-        this.load.image('expl', 'static/images/exp.jpeg');
+        this.load.image('expl1', 'static/images/exp.jpeg');
+        this.load.image('expl1crop', 'static/images/explncrop.png');
+        this.load.image('expl2', 'static/images/ship-exhaust1.png');
+        this.load.image('enemy-laser', '/static/images/extra-lasers.png');
 
 
         // load audio
@@ -78,12 +198,17 @@ class GameScene extends Phaser.Scene {
         this.load.audio('asteroidDestroyed', 'static/audio/asteroidDestroy.mp3');
         this.load.audio('secondShipEngine', 'static/audio/engine2.mp3');
         this.load.audio('theme', 'static/audio/theme1.mp3');
+        this.load.audio('enemyLaserBlast', 'static/audio/enemylaser1.mp3');
+        this.load.audio('enemyExplode', 'static/audio/enemyexplode.mp3');
     
     }
-
+    
     create() {
         // Create client socket
         socket = io(); 
+
+        let mainIsDead = false;
+        let secondIsDead = false;
     
         // moving space background
         this.tileSprite = this.add.tileSprite(0, 0, innerWidth, innerHeight, 'space');
@@ -100,6 +225,28 @@ class GameScene extends Phaser.Scene {
             loop: true
         })
 
+        // enemy lasers
+        this.enemies = this.add.group();
+        this.enemyLasers = this.add.group();
+
+        this.time.addEvent({
+            delay: 1100, 
+            callback: function() {
+              var enemyNew = new GunShip(
+                this,
+                Phaser.Math.Between(0, this.game.config.width),
+                0
+              );
+              this.enemies.add(enemyNew);
+              enemyNew.setScale(.14);
+              
+
+            },
+            callbackScope: this,
+            loop: true
+          });
+
+        
         let theme = this.sound.add('theme');
         theme.setLoop(true);
         theme.play();
@@ -112,6 +259,8 @@ class GameScene extends Phaser.Scene {
     
         // laser audio
         let mediumFireRateLaser = this.sound.add('mediumLaser');
+        this.enemyLaserSound = this.sound.add('enemyLaserBlast');
+        this.enemyExplode = this.sound.add('enemyExplode');
     
         // ship laser-logic
         this.laserGroup = new LaserGroup(this);
@@ -184,20 +333,67 @@ class GameScene extends Phaser.Scene {
         let asteroidDestroyed = this.sound.add("asteroidDestroyed");
          
          this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, function(laser, asteroid){
-    
-            asteroid.destroy();
+            if (laser.active && asteroid.active) {
+            let asteroid_explosion
+            // this.asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
+            let asteroidTween = this.tweens.add({
+                targets: asteroid,
+                alpha: {from: 1, to: 0},
+                duration: 100
+            });
+            
+            asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
+            asteroid_explosion.setScale(.2);
+            asteroid_explosion.setDepth(1);
+            
+            let asteroidExplTween = this.tweens.add({
+                targets: asteroid_explosion,
+                alpha: {from: 0, to: 1},
+                duration: 100,
+                yoyo: true
+            });
+
+            
+            asteroidTween.on('complete', () => {
+                asteroid.destroy();
+            })
+            asteroidExplTween.on('complete', () => {
+                asteroid_explosion.destroy();
+            })
+            // asteroid.destroy();
+            // this.asteroid_explosion.destroy();
             
             if (!asteroidDestroyed.isPlaying){
             asteroidDestroyed.play();
             }
+        }
             // laser.disableBody(false, true)
         }, null, this);
 
 
          // ship-asteroid detection
      
-         this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, asteroidToShip);
-         this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, asteroidToShip);
+         this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, function(ship, asteroid){ 
+
+            if (!mainIsDead) {
+                mainIsDead = true;
+                destroyPlayerShip(this, ship);//ship.destroy()
+            }
+                
+                asteroid.destroy();
+            
+            
+         }, null, this);
+         this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, function(ship, asteroid){ 
+
+            if (!secondIsDead) {
+                secondIsDead = true;
+                destroyPlayerShip(this, ship);//ship.destroy()
+            }
+            asteroid.destroy();
+        
+        
+     }, null, this);
      
      
          // enemy ships
@@ -235,7 +431,125 @@ class GameScene extends Phaser.Scene {
         this.keyD = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
         this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+
+                // overlap enemy laser
+                this.overlapEnemyLaser = this.physics.add.overlap(this.enemyLasers, this.main_ship, function(laser, ship){
+    
+                    if (!mainIsDead) {
+                        mainIsDead = true;
+                        destroyPlayerShip(this, ship);//ship.destroy()
+                    }
+                    this.emitter.stop();
+                    laser.destroy();
+                    
+                }, null, this);
+        
+                this.overlapEnemyLaserOne = this.physics.add.overlap(this.enemyLasers, this.second_ship, function(laser, ship) {
+        
+                    if (!secondIsDead) {
+                        secondIsDead = true;
+                        destroyPlayerShip(this, ship);//ship.destroy()
+                    }
+                    this.emitter_two.destroy();
+                    laser.destroy();
+                    
+        
+                }, null, this );
+        
+                // laser versus enemy ship
+                var count = 0
+                this.overlapLaserEnemy = this.physics.add.overlap(this.enemies, this.laserGroup, function(laser, enemy) {
+                        
+                    let enemy_explosion
+                    // this.asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
+                    let enemyTween = this.tweens.add({
+                        targets: enemy,
+                        alpha: {from: 1, to: 0},
+                        duration: 100
+                    });
+                    enemyTween.on('complete', () => {
+                        enemy.destroy(true);
+                        this.enemyExplode.play();
+                    })
+                    let coordArr = [-100, -75, - 50]
+                    for (const coord of coordArr ) {
+
+                    
+                    enemy_explosion = this.physics.add.sprite(enemy.x, enemy.y + coord, 'expl1crop');
+                    enemy_explosion.setScale(.5);
+                    enemy_explosion.setDepth(1);
+                    
+                    let enemyExplTween = this.tweens.add({
+                        targets: enemy_explosion,
+                        alpha: {from: 0, to: 1},
+                        duration: 200,
+                        yoyo: true
+                    });
+                    enemyExplTween.on('complete', () => {
+                        enemy_explosion.destroy();
+                    })
+
+                }
+        
+                    
+                    
+                    
+                    // asteroid.destroy();
+                    // this.asteroid_explosion.destroy();
+                    
+                   // if (!asteroidDestroyed.isPlaying){     PUT ENEMY DEAD SOUND HERE
+                   // asteroidDestroyed.play();
+                   // }
+                        count++
+                        laser.destroy(true);
+                        
+                        // if (count >= 5) {
+                        //     this.scene.start("GameScene")
+                            
+                        // }
+                
+        
+                }, null, this);
+        
+                
+        
+                // main ship versus enemy ship
+                this.overlapEnemyMain = this.physics.add.overlap(this.main_ship, this.enemies, function(ship, enemy) {
+                    
+        
+                    if (!mainIsDead) {
+                        mainIsDead = true;
+                        destroyPlayerShip(this, ship);//ship.destroy()
+                    }
+                    enemy.destroy()
+                    this.enemyExplode.play();
+                    this.emitter.stop()
+        
+        
+                }, null, this);
+        
+                 // second ship versus enemy ship
+                 this.overlapEnemySecond = this.physics.add.overlap(this.second_ship, this.enemies, function(ship, enemy) {
+                    
+                    if (!secondIsDead) {
+                        secondIsDead = true;
+                        destroyPlayerShip(this, ship);//ship.destroy()
+                    }
+                    enemy.destroy()
+                    this.enemyExplode.play();
+                    this.emitter_two.stop()
+                        
+                    
+        
+                }, null, this);
+    
+
+        
+            
     }
+
+
     
     update(time, delta) {
         // moving background logic
@@ -260,11 +574,42 @@ class GameScene extends Phaser.Scene {
         const asteroid = new Asteroid(this, 0, 0, 'big-asteroid', 0).setScale(Math.random() * 1);
         this.asteroidsGroup.add(asteroid, true);
         this.asteroidsArray.push(asteroid);
+
+        this.enemyShoot()
+
+        for (var i = 0; i < this.enemies.getChildren().length; i++) {
+            var enemy = this.enemies.getChildren()[i];
+      
+            enemy.update(this);
+          }
     
     
         
     }
+    enemyShoot() {
+
+        for(var i = 0; i < this.enemies.getChildren().length; i++) { //goes through every single enemy
+            var randomEnemyShoot = Phaser.Math.Between(1, 150);
+            if (randomEnemyShoot == 1) { //10% chance to shoot
+                var laser = new EnemyLaser(this, this.enemies.getChildren()[i]);
+                this.enemyLasers.add(laser);
+                
+                if (!this.enemyLaserSound.isPlaying) {
+                this.enemyLaserSound.play();
+                }
+                
+            }
+        }
+    }
+
 }
+//function playLaser (context) {
+//    let enemyLaserSound = context.sound.add('enemyLaserBlast');
+//    enemyLaserSound.play();
+//}
+
+
+
 let serverShip1Position = { x: 400, y: 630 };
 let serverShip2Position = { x: 700, y: 630 };
 let lastUpdatedTime = 0;
@@ -365,16 +710,16 @@ function playerMovement(){
     // moving ship with keys
     const speed = 8;
     //let secondShipEngine = this.sound.add("secondShipEngine");
-    if (this.cursors.left.isDown) {
+    if (this.keyA.isDown) {
         this.main_ship.x -= speed;
         socket.emit('player_move', { player: 'main_x', x: this.main_ship.x });
-    } else if (this.cursors.right.isDown) {
+    } else if (this.keyD.isDown) {
         this.main_ship.x += speed;
         socket.emit('player_move', { player: 'main_x', x: this.main_ship.x });
-    } else if (this.cursors.up.isDown) {
+    } else if (this.keyW.isDown) {
         this.main_ship.y -= speed;
         socket.emit('player_move', { player: 'main_y', y: this.main_ship.y });
-    } else if (this.cursors.down.isDown) {
+    } else if (this.keyS.isDown) {
         this.main_ship.y += speed;
         socket.emit('player_move', { player: 'main_y', y: this.main_ship.y });
     }
@@ -383,17 +728,17 @@ function playerMovement(){
     //    secondShipEngine.stop();
    // }
     // moving second ship with keys
-    if (this.keyA.isDown) {
+    if  (this.cursors.left.isDown){
         this.second_ship.x -= speed;
     //    secondShipEngine.play();
         socket.emit('player_move', { player: 'sec_x', x: this.second_ship.x });
-    } else if (this.keyD.isDown) {
+    } else if  (this.cursors.right.isDown){
         this.second_ship.x += speed;
         socket.emit('player_move', { player: 'sec_x', x: this.second_ship.x });
-    } else if (this.keyW.isDown) {
+    } else if  (this.cursors.up.isDown){
         this.second_ship.y -= speed;
         socket.emit('player_move', { player: 'sec_y', y: this.second_ship.y });
-    } else if (this.keyS.isDown) {
+    } else if (this.cursors.down.isDown){
         this.second_ship.y += speed;
         socket.emit('player_move', { player: 'sec_y', y: this.second_ship.y });
     }
@@ -425,11 +770,130 @@ function linearInterpolation() {
 
 function asteroidToShip(ship, asteroid) {    
 
-    ship.destroy();
+    destroyPlayerShip(this, ship);//ship.destroy()
     asteroid.destroy();
 
 }
 
+
+function destroyPlayerShip(context, ship) {
+        
+    let shipExplTween = context.tweens.add({
+        targets: ship,
+        alpha: {from: 0, to: 1},
+        duration: 300,
+        yoyo: true,
+        repeat: 5
+    });
+
+    shipExplTween.on('repeat', () => {
+        multiExplosion(context, ship)
+    })
+    
+    shipExplTween.on('complete', () => {
+        ship_explosion = context.physics.add.sprite(ship.x, ship.y, 'expl2');
+        ship_explosion.setScale(1);
+        ship_explosion.setDepth(1);
+        ship.destroy();
+        
+            
+        let explTween = context.tweens.add({
+                targets: ship_explosion,
+                alpha: {from: 0, to: 1},
+                duration: 600,
+                yoyo: true
+            });
+
+            explTween.on('complete', () => {
+                ship_explosion.destroy();
+            })
+    })
+}
+
+function multiExplosion(context, ship){
+    
+    explosion = context.physics.add.sprite(ship.x, ship.y, 'expl1crop');
+    explosion.setScale(.7);
+    explosion.setDepth(1);
+    let explodeTween = context.tweens.add({
+        targets: explosion,
+        alpha: {from: 0, to: 1},
+        duration: 200,
+        yoyo: true
+    });
+
+    explodeTween.on('complete', () => {
+        explosion.destroy();
+    })
+    
+}
+
+class Entity extends Phaser.GameObjects.Sprite {
+    constructor(scene, x, y, key, type) {
+        super(scene, x, y, key);
+
+        this.scene = scene;
+        this.scene.add.existing(this);
+        this.scene.physics.world.enableBody(this, 0);
+        this.setData("type", type);
+        this.setData("isDead", false);
+      
+    }
+  }
+
+
+class GunShip extends Entity {
+    constructor(scene, x, y) {
+      super(scene, x, y, "enemy", "GunShip");
+      this.body.velocity.x = Phaser.Math.Between(0, 75);
+    //   this.shootTimer = this.scene.time.addEvent({
+    //     delay: 2000,
+    //     callback: function() {
+    //       var newLaser = new EnemyLaser(
+    //         this.scene,
+    //         this.x,
+    //         this.y
+    //       );
+    //       newLaser.setScale(1);
+    //       this.scene.enemyLasers.add(newLaser);
+          
+    //     },
+    //     callbackScope: this,
+    //     loop: true
+    //   });
+
+    }
+    onDestroy() {
+        if (this.shootTimer !== undefined) {
+            if (this.shootTimer) {
+              this.shootTimer.remove(false);
+            }
+          }
+    }
+  }
+  
+
+class EnemyLaser extends Entity {
+  
+    constructor(scene, enemy) {
+        var x = enemy.x;
+        var y = enemy.y;
+    
+        super(scene, x, y, "enemy-laser");
+        scene.add.existing(this);
+    
+        // this.play("laser_anim");
+        scene.physics.world.enableBody(this);
+        this.body.velocity.y = 250;
+    }
+    
+    
+    update(){
+        if (this.y > 600) {
+            this.destroy();
+        }
+    }
+  }
 
 var config = {
     type: Phaser.AUTO,
