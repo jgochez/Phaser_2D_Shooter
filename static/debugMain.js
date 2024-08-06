@@ -52,6 +52,10 @@ class TitleScene extends Phaser.Scene {
         titleTheme.setLoop(true);
         titleTheme.play();
 
+        // highscore
+        this.highscore = this.add.text(16, 16, `highscore: ${highscore}`, { fontSize: '32px' });
+        this.highscore.setDepth(10);
+
         // start button
         this.startButton = this.physics.add.sprite(700, 100, 'start')
         this.startButton.setCollideWorldBounds();
@@ -167,8 +171,9 @@ class TitleScene extends Phaser.Scene {
 
 }
 
-
-
+var theme;
+var highscore = 0;
+var totalAsteroids;
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -207,13 +212,13 @@ class GameScene extends Phaser.Scene {
         // Create client socket
         socket = io(); 
 
-        let mainIsDead = false;
-        let secondIsDead = false;
     
         // moving space background
         this.tileSprite = this.add.tileSprite(0, 0, innerWidth, innerHeight, 'space');
         this.tileSprite.setOrigin(0);
         this.tileSprite.setScrollFactor(0, 1);
+        this.mainDead = false;
+        this.secondDead = false;
     
         // asteroid handling which depends on level
         this.asteroidsGroup = this.physics.add.group();
@@ -224,6 +229,21 @@ class GameScene extends Phaser.Scene {
             callbackScope: this,
             loop: true
         })
+
+        // Score display
+        score1 = 0
+        score2 = 0;
+        
+        this.totalScore = 0;
+
+        totalAsteroids = 0;
+        this.maxAsteroids = [1, 2, 3, 4, 5, 6, 7, 8, 10]
+        this.maxAsteroidsIndex = 0;
+
+        this.scoreText1 = this.add.text(16, 16, 'score: 0', { fontSize: '32px' });
+        this.scoreText1.setDepth(10);
+        this.scoreText2 = this.add.text(550, 16, 'score: 0', { fontSize: '32px'});
+        this.scoreText2.setDepth(10);
 
         // enemy lasers
         this.enemies = this.add.group();
@@ -247,7 +267,7 @@ class GameScene extends Phaser.Scene {
           });
 
         
-        let theme = this.sound.add('theme');
+        theme = this.sound.add('theme');
         theme.setLoop(true);
         theme.play();
         
@@ -264,12 +284,15 @@ class GameScene extends Phaser.Scene {
     
         // ship laser-logic
         this.laserGroup = new LaserGroup(this);
+        this.laserGroup2 = new LaserGroup(this);
         this.laserGroup.setDepth(1);
         // event-listening for laser for main ship
         this.input.on( 'pointerdown', pointer => {
             // begin shooting
+            if (!mainIsDead) {
             this.laserGroup.fireLaser(this.main_ship.x, this.main_ship.y - 50);
             mediumFireRateLaser.play();
+            }
         });
         
         
@@ -278,8 +301,10 @@ class GameScene extends Phaser.Scene {
         var spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
     
         spacebar.on( 'down', pointer => {
-            this.laserGroup.fireLaser(this.second_ship.x, this.second_ship.y - 50)
+            if (!secondIsDead) {
+            this.laserGroup2.fireLaser(this.second_ship.x, this.second_ship.y - 50)
             mediumFireRateLaser.play();
+            }
         })
     
         // main-ship boosters logic
@@ -298,6 +323,7 @@ class GameScene extends Phaser.Scene {
     
         })
         this.emitter.setDepth(1);
+        mainShipEngines.push(this.emitter)
     
         // second ship logic
     
@@ -310,24 +336,32 @@ class GameScene extends Phaser.Scene {
         
         
         var booster_count = .08
-        var boosterOffset = -.03
+        var boosterOffset = -.0275
         var boosterOffsetY = -.06
-        for (var i = 1; i < 5; i++) {
-        this.emitter_two = this.add.particles(0, 0, 'exhaust-two',{
-            quantity: 5,
-            speedY: { min: 10, max: 30 },
-            speedX: { min: -10, max: 10 },
-            scale: { start: 0.065, end: .0065 },
-            follow: this.second_ship,
-            scale: 0.2,
-            accelerationY: 1000,
-            lifespan: { min: 100, max: 300 },
-            followOffset: { y: this.second_ship.height * 0.075 + boosterOffsetY , x: this.second_ship.width * (booster_count += boosterOffset)},
-            alpha: { random: [0.1, 0.8] },
-            
-        })
+        //for (var i = 1; i < 5; i++) {
+        this.emitter_two = createBoosters(booster_count, boosterOffset, boosterOffsetY, this)
         this.emitter_two.setDepth(1);
-    }
+        booster_count += boosterOffset;
+        secondShipEngines.push(this.emitter_two);
+        this.emitter_three = createBoosters(booster_count, boosterOffset, boosterOffsetY, this)
+        this.emitter_three.setDepth(1);
+        booster_count += boosterOffset;
+        secondShipEngines.push(this.emitter_three);
+        this.emitter_four = createBoosters(booster_count, boosterOffset, boosterOffsetY, this)
+        this.emitter_four.setDepth(1);
+        booster_count += boosterOffset;
+        secondShipEngines.push(this.emitter_four);
+        this.emitter_five = createBoosters(booster_count, boosterOffset, boosterOffsetY, this)
+        this.emitter_five.setDepth(1);
+        booster_count += boosterOffset;
+        secondShipEngines.push(this.emitter_five);
+        this.emitter_six = createBoosters(booster_count, boosterOffset, boosterOffsetY, this)
+        this.emitter_six.setDepth(1);
+        secondShipEngines.push(this.emitter_six);
+        
+    //}
+
+    
     
          // laser-asteroid detection
         let asteroidDestroyed = this.sound.add("asteroidDestroyed");
@@ -356,6 +390,8 @@ class GameScene extends Phaser.Scene {
             
             asteroidTween.on('complete', () => {
                 asteroid.destroy();
+                score1 += 10;
+                this.totalScore += 10;
             })
             asteroidExplTween.on('complete', () => {
                 asteroid_explosion.destroy();
@@ -366,6 +402,51 @@ class GameScene extends Phaser.Scene {
             if (!asteroidDestroyed.isPlaying){
             asteroidDestroyed.play();
             }
+            totalAsteroids -= 1;
+        }
+            // laser.disableBody(false, true)
+        }, null, this);
+
+
+
+        this.overlapLaser = this.physics.add.overlap(this.laserGroup2, this.asteroidsGroup, function(laser, asteroid){
+            if (laser.active && asteroid.active) {
+            let asteroid_explosion
+            // this.asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
+            let asteroidTween = this.tweens.add({
+                targets: asteroid,
+                alpha: {from: 1, to: 0},
+                duration: 100
+            });
+            
+            asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
+            asteroid_explosion.setScale(.2);
+            asteroid_explosion.setDepth(1);
+            
+            let asteroidExplTween = this.tweens.add({
+                targets: asteroid_explosion,
+                alpha: {from: 0, to: 1},
+                duration: 100,
+                yoyo: true
+            });
+
+            
+            asteroidTween.on('complete', () => {
+                asteroid.destroy();
+                score2 += 10;
+                this.totalScore += 10;
+            })
+            asteroidExplTween.on('complete', () => {
+                asteroid_explosion.destroy();
+            })
+            // asteroid.destroy();
+            // this.asteroid_explosion.destroy();
+            
+            if (!asteroidDestroyed.isPlaying){
+            asteroidDestroyed.play();
+            }
+            totalAsteroids -= 1;
+
         }
             // laser.disableBody(false, true)
         }, null, this);
@@ -376,21 +457,26 @@ class GameScene extends Phaser.Scene {
          this.overlapShip = this.physics.add.overlap(this.main_ship, this.asteroidsGroup, function(ship, asteroid){ 
 
             if (!mainIsDead) {
+                
                 mainIsDead = true;
-                destroyPlayerShip(this, ship);//ship.destroy()
+                 destroyPlayerShip(this, ship, mainShipEngines, 1);//ship.destroy()
             }
                 
                 asteroid.destroy();
+                totalAsteroids -= 1;
             
             
          }, null, this);
          this.overlapSecondShip = this.physics.add.overlap(this.second_ship, this.asteroidsGroup, function(ship, asteroid){ 
 
             if (!secondIsDead) {
+                
+                
                 secondIsDead = true;
-                destroyPlayerShip(this, ship);//ship.destroy()
+                destroyPlayerShip(this, ship, secondShipEngines, 2);//ship.destroy()
             }
             asteroid.destroy();
+            totalAsteroids -= 1;
         
         
      }, null, this);
@@ -437,10 +523,11 @@ class GameScene extends Phaser.Scene {
                 this.overlapEnemyLaser = this.physics.add.overlap(this.enemyLasers, this.main_ship, function(laser, ship){
     
                     if (!mainIsDead) {
+                        
                         mainIsDead = true;
-                        destroyPlayerShip(this, ship);//ship.destroy()
+                        destroyPlayerShip(this, ship, mainShipEngines, 1);//ship.destroy()
                     }
-                    this.emitter.stop();
+                    //this.emitter.stop();
                     laser.destroy();
                     
                 }, null, this);
@@ -448,10 +535,12 @@ class GameScene extends Phaser.Scene {
                 this.overlapEnemyLaserOne = this.physics.add.overlap(this.enemyLasers, this.second_ship, function(laser, ship) {
         
                     if (!secondIsDead) {
+                        
+                        
                         secondIsDead = true;
-                        destroyPlayerShip(this, ship);//ship.destroy()
+                        destroyPlayerShip(this, ship, secondShipEngines, 2);//ship.destroy()
                     }
-                    this.emitter_two.destroy();
+                  //  this.emitter_two.destroy();
                     laser.destroy();
                     
         
@@ -460,7 +549,62 @@ class GameScene extends Phaser.Scene {
                 // laser versus enemy ship
                 var count = 0
                 this.overlapLaserEnemy = this.physics.add.overlap(this.enemies, this.laserGroup, function(laser, enemy) {
+                    score1 += 100
+                    this.totalScore += 100;
+                    let enemy_explosion
+                    // this.asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
+                    let enemyTween = this.tweens.add({
+                        targets: enemy,
+                        alpha: {from: 1, to: 0},
+                        duration: 100
+                    });
+                    enemyTween.on('complete', () => {
+                        enemy.destroy(true);
+                        this.enemyExplode.play();
+                    })
+                    let coordArr = [-100, -75, - 50]
+                    for (const coord of coordArr ) {
+
+                    
+                    enemy_explosion = this.physics.add.sprite(enemy.x, enemy.y + coord, 'expl1crop');
+                    enemy_explosion.setScale(.5);
+                    enemy_explosion.setDepth(1);
+                    
+                    let enemyExplTween = this.tweens.add({
+                        targets: enemy_explosion,
+                        alpha: {from: 0, to: 1},
+                        duration: 200,
+                        yoyo: true
+                    });
+                    enemyExplTween.on('complete', () => {
+                        enemy_explosion.destroy();
+                    })
+
+                }
+        
+                    
+                    
+                    
+                    // asteroid.destroy();
+                    // this.asteroid_explosion.destroy();
+                    
+                   // if (!asteroidDestroyed.isPlaying){     PUT ENEMY DEAD SOUND HERE
+                   // asteroidDestroyed.play();
+                   // }
+                        count++
+                        laser.destroy(true);
                         
+                        // if (count >= 5) {
+                        //     this.scene.start("GameScene")
+                            
+                        // }
+                
+        
+                }, null, this);
+
+                this.overlapLaserEnemy2 = this.physics.add.overlap(this.enemies, this.laserGroup2, function(laser, enemy) {
+                    score2 += 100
+                    this.totalScore += 100;
                     let enemy_explosion
                     // this.asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
                     let enemyTween = this.tweens.add({
@@ -519,12 +663,13 @@ class GameScene extends Phaser.Scene {
                     
         
                     if (!mainIsDead) {
+                        
                         mainIsDead = true;
-                        destroyPlayerShip(this, ship);//ship.destroy()
+                        destroyPlayerShip(this, ship, mainShipEngines, 1);//ship.destroy()
                     }
                     enemy.destroy()
                     this.enemyExplode.play();
-                    this.emitter.stop()
+                    //this.emitter.stop()
         
         
                 }, null, this);
@@ -533,12 +678,14 @@ class GameScene extends Phaser.Scene {
                  this.overlapEnemySecond = this.physics.add.overlap(this.second_ship, this.enemies, function(ship, enemy) {
                     
                     if (!secondIsDead) {
+                        
+                        
                         secondIsDead = true;
-                        destroyPlayerShip(this, ship);//ship.destroy()
+                        destroyPlayerShip(this, ship, secondShipEngines, 2);//ship.destroy()
                     }
                     enemy.destroy()
                     this.enemyExplode.play();
-                    this.emitter_two.stop()
+                    //this.emitter_two.stop()
                         
                     
         
@@ -553,11 +700,44 @@ class GameScene extends Phaser.Scene {
     
     update(time, delta) {
         // moving background logic
+        
+        if (totalAsteroids < 0) {
+            totalAsteroids = 0;
+        }
+        if (this.maxAsteroidsIndex < 8 && this.totalScore >= this.maxAsteroids[this.maxAsteroidsIndex] * 1000) {
+            this.maxAsteroidsIndex += 1
+        }
+        
+        if (this.mainDead && this.secondDead) {
+           
+            if (score1 > score2 && score1 > highscore) {
+                highscore = score1;
+            }
+            else if (score2 > score1 && score1 > highscore) {
+                highscore = score2;
+            }
+           //endGame(this, theme);
+           this.mainDead = false;
+           this.secondDead = false;
+           mainIsDead = false;
+           secondIsDead = false;
+           
+            theme.stop();
+            this.scene.start('TitleScene')
+        
+    }
+
+
         this.tileSprite.tilePositionY -= 5;
     
         // Ship Movement
         playerMovement.call(this);
         linearInterpolation.call(this);
+
+
+        // Score update
+        this.scoreText1.setText('score: ' + score1);
+        this.scoreText2.setText('score: ' + score2);  // to-do: score1 is rising to 1200 before any lasers fired
     
     
         // asteroid movement and additions
@@ -571,9 +751,22 @@ class GameScene extends Phaser.Scene {
             asteroid.update(time, delta);
         }
     
-        const asteroid = new Asteroid(this, 0, 0, 'big-asteroid', 0).setScale(Math.random() * 1);
+        if (totalAsteroids <= this.maxAsteroids[this.maxAsteroidsIndex]) {
+            console.log(totalAsteroids, this.maxAsteroids[this.maxAsteroidsIndex])
+        
+        let mathRandom = Math.random()
+        
+        // set minimum size for asteroid
+        while (mathRandom < 0.4) {
+            mathRandom = Math.random()
+        }
+        
+        
+        const asteroid = new Asteroid(this, 0, 0, 'big-asteroid', 0).setScale(mathRandom * 1);
         this.asteroidsGroup.add(asteroid, true);
         this.asteroidsArray.push(asteroid);
+        totalAsteroids += 1
+    }
 
         this.enemyShoot()
 
@@ -608,12 +801,32 @@ class GameScene extends Phaser.Scene {
 //    enemyLaserSound.play();
 //}
 
-
+function endGame(context, music) {
+    context.tweens.add({
+        targets: music,
+         volume: { from: 1, to: 0},
+           duration: 1800
+        });
+    music.stop();
+        
+    context.cameras.main.fadeOut(2000, 0, 0, 0, (camera, progress) => {
+            if (progress === 1) {
+                context.scene.start('TitleScene');
+                
+            }
+        }, context) 
+}
 
 let serverShip1Position = { x: 400, y: 630 };
 let serverShip2Position = { x: 700, y: 630 };
 let lastUpdatedTime = 0;
 let socket;
+var score1 = 0;
+var score2 = 0;
+var mainIsDead = false;
+var secondIsDead = false;
+var mainShipEngines = [];
+var secondShipEngines = [];
 
 class Asteroid extends Phaser.Physics.Arcade.Sprite {
 
@@ -653,6 +866,7 @@ class Asteroid extends Phaser.Physics.Arcade.Sprite {
             this.setActive(false);
             this.setVisible(false);
             this.destroy();
+            totalAsteroids -= 1
         }
 }
     isOrbiting() {
@@ -759,6 +973,7 @@ function linearInterpolation() {
 }
 
 
+// const ipAddress = socket.handshake.headers["x-forwarded-for"].split(",")[0];
 
 // function asteroidToLaser(laser, asteroid){
     
@@ -776,8 +991,27 @@ function asteroidToShip(ship, asteroid) {
 }
 
 
-function destroyPlayerShip(context, ship) {
+
+function createBoosters(count, offset, offesty, context){
+    let newBooster = context.add.particles(0, 0, 'exhaust-two',{
+        quantity: 5,
+        speedY: { min: 10, max: 30 },
+        speedX: { min: -10, max: 10 },
+        scale: { start: 0.065, end: .0065 },
+        follow: context.second_ship,
+        scale: 0.2,
+        accelerationY: 1000,
+        lifespan: { min: 100, max: 300 },
+        followOffset: { y: context.second_ship.height * 0.075 + offesty , x: context.second_ship.width * (count += offset)},
+        alpha: { random: [0.1, 0.8] },
         
+    })
+    return newBooster;
+}
+
+
+function destroyPlayerShip(context, ship, engineArr, player) {
+
     let shipExplTween = context.tweens.add({
         targets: ship,
         alpha: {from: 0, to: 1},
@@ -796,6 +1030,13 @@ function destroyPlayerShip(context, ship) {
         ship_explosion.setDepth(1);
         ship.destroy();
         
+        for (const engine of engineArr) {
+            engine.stop();
+            engine.destroy();
+        }
+        
+        
+        
             
         let explTween = context.tweens.add({
                 targets: ship_explosion,
@@ -806,8 +1047,19 @@ function destroyPlayerShip(context, ship) {
 
             explTween.on('complete', () => {
                 ship_explosion.destroy();
+                if (player == 1) {
+                    context.mainDead = true;
+                }
+                else {
+                    context.secondDead = true;
+                }
+
+                
             })
+
     })
+
+    
 }
 
 function multiExplosion(context, ship){
