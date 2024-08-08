@@ -1,0 +1,5 @@
+# Manage dependencies
+Flask
+Flask-SocketIO
+eventlet
+gunicorn
