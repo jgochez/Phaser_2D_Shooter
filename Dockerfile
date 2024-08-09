@@ -40,4 +40,4 @@ CMD ["python", "app.py"]
 
 # (6) Access Program:
 
-#   External IP/Port: 34.70.215.241:5555
+#   External IP/Port: 34.45.9.90:5555
