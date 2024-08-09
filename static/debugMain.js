@@ -1098,21 +1098,6 @@ class GunShip extends Entity {
     constructor(scene, x, y) {
       super(scene, x, y, "enemy", "GunShip");
       this.body.velocity.x = Phaser.Math.Between(0, 75);
-    //   this.shootTimer = this.scene.time.addEvent({
-    //     delay: 2000,
-    //     callback: function() {
-    //       var newLaser = new EnemyLaser(
-    //         this.scene,
-    //         this.x,
-    //         this.y
-    //       );
-    //       newLaser.setScale(1);
-    //       this.scene.enemyLasers.add(newLaser);
-          
-    //     },
-    //     callbackScope: this,
-    //     loop: true
-    //   });
 
     }
     onDestroy() {
