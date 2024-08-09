@@ -1,4 +1,5 @@
-FOR GRADER:
+PLEASE READ:
+
     Game was first developed as a client-side only game (client_side_version), and then was converted
     as a multiplayer game with the implementation of the authoritative server architecture which
     involved significant amount of socket programming and its subsequent deployment onto GCP.
