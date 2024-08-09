@@ -372,7 +372,7 @@ function fireSecondShipLaser() {
 }
 
 function playerMovement() {
-    // Handle Main Player Velocity NOT Speed
+    // Handle Main Player Velocity 
     const speed = 1;
     let mainDx = 0;
     let mainDy = 0;
@@ -391,7 +391,7 @@ function playerMovement() {
         socket.emit('player_move', { player: 'main', dx: mainDx, dy: mainDy });
     }
 
-    // Handle Second Player Velocity NOT Speed
+    // Handle Second Player Velocity
     let secondDx = 0;
     let secondDy = 0;
 

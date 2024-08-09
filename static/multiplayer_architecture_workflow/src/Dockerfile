@@ -9,6 +9,9 @@ CMD ["python", "app.py"]
 #----------------------------
 # Google Compute Engine Steps
 #----------------------------
+
+# I should really use a CI/CD Pipeline.. lol
+
 # (1) Containerize Program: ***
 
 #   docker build -t phaser2d-image . (add)
