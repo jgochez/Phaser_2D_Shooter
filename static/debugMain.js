@@ -1,5 +1,3 @@
-// This file is just a combination of all the other JS modules
-
 class PlayScene extends Phaser.Scene{
     constructor() {
         super('PlayScene')
@@ -122,7 +120,6 @@ class TitleScene extends Phaser.Scene {
         this.input.on( 'pointerdown', pointer => {
             // begin shooting
             this.laserGroup.fireLaser(this.ship.x, this.ship.y - 50);
-            // mediumFireRateLaser.play();
         }); 
 
         this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.startButton, function(laser, startButton){
@@ -338,7 +335,6 @@ class GameScene extends Phaser.Scene {
         var booster_count = .08
         var boosterOffset = -.0275
         var boosterOffsetY = -.06
-        //for (var i = 1; i < 5; i++) {
         this.emitter_two = createBoosters(booster_count, boosterOffset, boosterOffsetY, this)
         this.emitter_two.setDepth(1);
         booster_count += boosterOffset;
@@ -358,8 +354,6 @@ class GameScene extends Phaser.Scene {
         this.emitter_six = createBoosters(booster_count, boosterOffset, boosterOffsetY, this)
         this.emitter_six.setDepth(1);
         secondShipEngines.push(this.emitter_six);
-        
-    //}
 
     
     
@@ -369,7 +363,6 @@ class GameScene extends Phaser.Scene {
          this.overlapLaser = this.physics.add.overlap(this.laserGroup, this.asteroidsGroup, function(laser, asteroid){
             if (laser.active && asteroid.active) {
             let asteroid_explosion
-            // this.asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
             let asteroidTween = this.tweens.add({
                 targets: asteroid,
                 alpha: {from: 1, to: 0},
@@ -412,7 +405,6 @@ class GameScene extends Phaser.Scene {
         this.overlapLaser = this.physics.add.overlap(this.laserGroup2, this.asteroidsGroup, function(laser, asteroid){
             if (laser.active && asteroid.active) {
             let asteroid_explosion
-            // this.asteroid_explosion = this.physics.add.sprite(asteroid.x, asteroid.y, 'expl2');
             let asteroidTween = this.tweens.add({
                 targets: asteroid,
                 alpha: {from: 1, to: 0},
@@ -481,14 +473,6 @@ class GameScene extends Phaser.Scene {
         
      }, null, this);
      
-     
-         // enemy ships
-         this.enemy = this.physics.add.sprite(100, 200, 'enemy');
-         this.enemy.setScale(.15);
-         this.enemy.setCollideWorldBounds(true);
-     
-     
-    
     
         // Listen for position updates
         socket.on('update_position', (data) => {
