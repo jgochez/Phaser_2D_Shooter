@@ -1,3 +1,5 @@
+### Capstone 467: Galactic Showdown 
+
 PLEASE READ:
 
     Game was first developed as a client-side only game (client_side_version), and then was converted

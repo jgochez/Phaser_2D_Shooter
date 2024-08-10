@@ -72,7 +72,7 @@ class TitleScene extends Phaser.Scene {
         this.tileSprite.setScale(.25);
 
         // User interface
-        this.add.text(150, 300, "2D Space Shooter", { fontSize: '48px' });
+        this.add.text(150, 300, "Galactic Showdown", { fontSize: '48px' });
         this.add.text(150, 400, "Shoot the Start button, or press enter to play...");
         const enter = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
         enter.on( 'down', () => {
