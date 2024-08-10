@@ -61,4 +61,6 @@ Multiplayer Folder:
         2. deploy container to GCP
         3. create firewall rule
         4. create VM instance
-        5. run url -> _._._._/_
+        5. run url -> 34.136.116.182:5555
+
+### To play, click both "Player 1 Ready" and "Player 2 Ready"
