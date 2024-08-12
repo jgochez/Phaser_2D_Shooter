@@ -63,4 +63,7 @@ Multiplayer Folder:
         4. create VM instance
         5. run url -> 34.136.116.182:5555
 
-### To play, click both "Player 1 Ready" and "Player 2 Ready"
+### To play:
+    1. click both "Player 1 Ready" and "Player 2 Ready"
+    2. Player 1 Controls: { Movement: WASD | Laser: L }
+    3. Player 2 Controls: { Movement: Arrows | Laser: SPACEBAR }
