@@ -1,0 +1,46 @@
+# Make sure Google Cloud SDK package is installed
+# Make sure Google Cloud APIs are installed:
+
+# gcloud services enable cloudbuild.googleapis.com \
+#     artifactregistry.googleapis.com \
+#     compute.googleapis.com
+
+# Make sure to be on correct project ID: gcloud config set project <PROJECT_ID>
+# Run CI/CD Pipeline manually or use Trigger: gcloud builds submit --config=cloudbuild.yaml .
+
+steps:
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/a3_gochezjo/phaser2d-image', '.']
+  
+  # Step 2: Push Docker image to GCP Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/a3_gochezjo/phaser2d-image']
+
+  # Step 3: Deploy to Google Compute Engine
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['compute', 'instances', 'create-with-container', 'phaser2d-vm',
+           '--machine-type=e2-medium',
+           '--container-image=gcr.io/a3_gochezjo/phaser2d-image',
+           '--tags=http-server,https-server',
+           '--zone=us-central1-a']
+
+  # Step 4: Set up firewall rule
+   - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'zsh'
+    args:
+      - '-c'
+      - |
+        if gcloud compute firewall-rules describe 5555-firewall-rule > /dev/null 2>&1; then
+          gcloud compute firewall-rules delete 5555-firewall-rule --quiet;
+        else
+          echo "Firewall rule 5555-firewall-rule does not exist.";
+        fi
+        
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['compute', 'firewall-rules', 'create', 'allow-tcp-5555',
+           '--allow=tcp:5555',
+           '--target-tags=http-server,https-server',
+           '--source-ranges=0.0.0.0/0']
+
+timeout: '1200s'
